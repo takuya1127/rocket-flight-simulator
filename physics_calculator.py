@@ -1,0 +1,277 @@
+import math
+
+from dataclasses import dataclass
+
+from atmosphere import AtmosphereCalculator
+from flight_analysis import FlightAnalyzer
+from gravity import GravityCalculator
+
+@dataclass(frozen=True)
+class PropulsionResult:
+    """
+    1ステップ分の推進系計算結果。
+
+    Attributes
+    ----------
+    engine_is_burning:エンジンが燃焼中かどうか
+    thrust_x: X方向の推力（N）
+    thrust_y: Y方向の推力（N）
+    thrust_magnitude: 現在の推力の大きさ（N）
+    remaining_fuel: 計算後の燃料残量（kg）
+    """
+
+    engine_is_burning: bool
+    thrust_x: float
+    thrust_y: float
+    thrust_magnitude: float
+
+    remaining_fuel: float
+
+
+@dataclass(frozen=True)
+class PhysicsResult:
+    """
+    1ステップ分の物理計算結果。
+
+    Attributes
+    ----------
+    total_mass: 現在のロケット総質量（kg）
+    gravity: 現在高度の重力加速度（m/s²）
+    air_density: 現在高度の空気密度（kg/m³）
+    speed: 計算前の合成速度（m/s）
+    dynamic_pressure: 動圧（Pa）
+    drag_force_x: X方向の空気抵抗（N）
+    drag_force_y: Y方向の空気抵抗（N）
+    acceleration_x: X方向の加速度（m/s²）
+    acceleration_y: Y方向の加速度（m/s²）
+    """
+
+    total_mass: float
+    gravity: float
+    air_density: float
+    speed: float
+    dynamic_pressure: float
+    speed_of_sound: float
+    drag_force_x: float
+    drag_force_y: float
+    drag_force_x: float
+    drag_force_y: float
+    acceleration_x: float
+    acceleration_y: float
+
+class PhysicsCalculator:
+    """
+    ロケットへ働く力と加速度を計算するクラス。
+    以下の計算を担当する。
+
+    ・現在の総質量
+    ・高度に応じた重力
+    ・高度に応じた大気状態
+    ・動圧
+    ・空気抵抗
+    ・X方向、Y方向の合力
+    ・X方向、Y方向の加速度
+    """
+
+    @staticmethod
+    def calculate_propulsion(
+            *,
+            time: float,
+            burn_time: float,
+            thrust: float,
+            launch_angle_radians: float,
+            current_fuel: float,
+            fuel_consumption_per_second: float,
+            time_step: float,
+    ) -> PropulsionResult:
+        """
+        エンジンの燃焼状態・推力・燃料残量を計算する。
+
+        Parameters
+        ----------
+        time: 現在時刻（秒）
+        burn_time: エンジンの燃焼時間（秒）
+        thrust: エンジン推力（N）
+        launch_angle_radians: 発射角度（ラジアン）
+        current_fuel: 現在の燃料残量（kg）
+        fuel_consumption_per_second: 1秒あたりの燃料消費量（kg/s）
+        time_step: シミュレーションの時間刻み（秒）
+
+        Returns
+        -------
+        PropulsionResult: 推力と燃料に関する計算結果
+        """
+
+        engine_is_burning = (
+            time < burn_time
+            and current_fuel > 0
+        )
+        if not engine_is_burning:
+            return PropulsionResult(
+                engine_is_burning=False,
+                thrust_x=0.0,
+                thrust_y=0.0,
+                thrust_magnitude=0.0,
+                remaining_fuel=current_fuel,
+            )
+
+        thrust_x = (
+            thrust * math.cos(launch_angle_radians)
+        )
+        thrust_y = (
+            thrust * math.sin(launch_angle_radians)
+        )
+        consumed_fuel = (
+            fuel_consumption_per_second * time_step
+        )
+        remaining_fuel = max(
+            0.0,
+            current_fuel - consumed_fuel,
+        )
+        thrust_magnitude = math.hypot(
+            thrust_x,
+            thrust_y,
+        )
+
+        return PropulsionResult(
+            engine_is_burning=True,
+            thrust_x=thrust_x,
+            thrust_y=thrust_y,
+            thrust_magnitude=thrust_magnitude,
+            remaining_fuel=remaining_fuel,
+        )
+
+    @staticmethod
+    def calculate(
+        *,
+        dry_mass: float,
+        current_fuel: float,
+        position_y: float,
+        velocity_x: float,
+        velocity_y: float,
+        thrust_x: float,
+        thrust_y: float,
+        drag_coefficient: float,
+        reference_area: float,
+    ) -> PhysicsResult:
+        """
+        現在の状態から1ステップ分の物理量を計算する。
+
+        Parameters
+        ----------
+        dry_mass: 燃料を除いた機体質量（kg）
+        current_fuel: 現在の燃料残量（kg）
+        position_y: 現在高度（m）
+        velocity_x: 現在のX方向速度（m/s）
+        velocity_y: 現在のY方向速度（m/s）
+        thrust_x: X方向の推力（N）
+        thrust_y: Y方向の推力（N）
+        drag_coefficient: 抗力係数
+        reference_area: 基準断面積（m²）
+
+        Returns
+        -------
+        PhysicsResult: 現在の物理計算結果
+        """
+
+        # 現在のロケット総質量
+        total_mass = (
+            dry_mass
+            + current_fuel
+        )
+
+        # 現在高度における重力加速度
+        gravity = GravityCalculator.calculate(
+            altitude_meters=position_y,
+        )
+
+        # 現在のロケットへ働く重力
+        weight_force = (
+            total_mass
+            * gravity
+        )
+
+        # 現在高度における大気状態
+        atmosphere = AtmosphereCalculator.calculate(
+            position_y
+        )
+
+        air_density = atmosphere.density
+
+        # X・Y方向を合わせた現在速度
+        speed = math.hypot(
+            velocity_x,
+            velocity_y,
+        )
+
+        # 現在の動圧
+        dynamic_pressure = (
+            FlightAnalyzer.calculate_dynamic_pressure(
+                air_density=air_density,
+                speed=speed,
+            )
+        )
+
+        # 空気抵抗の初期値
+        drag_force_x = 0.0
+        drag_force_y = 0.0
+
+        # 停止中は空気抵抗が発生しない
+        if speed > 0:
+            # 空気抵抗の大きさ
+            drag_force = (
+                dynamic_pressure
+                * drag_coefficient
+                * reference_area
+            )
+
+            # 空気抵抗は進行方向と反対向き
+            drag_force_x = (
+                -drag_force
+                * velocity_x
+                / speed
+            )
+
+            drag_force_y = (
+                -drag_force
+                * velocity_y
+                / speed
+            )
+
+        # X方向の合力
+        net_force_x = (
+            thrust_x
+            + drag_force_x
+        )
+
+        # Y方向の合力
+        net_force_y = (
+            thrust_y
+            - weight_force
+            + drag_force_y
+        )
+
+        # X方向の加速度
+        acceleration_x = (
+            net_force_x
+            / total_mass
+        )
+
+        # Y方向の加速度
+        acceleration_y = (
+            net_force_y
+            / total_mass
+        )
+
+        return PhysicsResult(
+            total_mass=total_mass,
+            gravity=gravity,
+            air_density=air_density,
+            speed=speed,
+            dynamic_pressure=dynamic_pressure,
+            drag_force_x=drag_force_x,
+            drag_force_y=drag_force_y,
+            acceleration_x=acceleration_x,
+            acceleration_y=acceleration_y,
+            speed_of_sound=atmosphere.speed_of_sound,
+        )
