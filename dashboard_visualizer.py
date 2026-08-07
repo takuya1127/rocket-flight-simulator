@@ -363,18 +363,36 @@ def _create_status_annotation(
     current_altitude: float,
     current_speed: float,
     current_mach: float,
+    compact: bool = False,
 ) -> dict:
     """
     現在値表示用の注釈を作る。
     """
 
-    return {
-        "text": (
+    if compact:
+        # スマホ用：1行のコンパクト表示
+        status_text = (
+            f"<b>T+{current_time:.1f}s</b>"
+            f" | {current_altitude / 1000:.2f}km"
+            f" | {current_speed:.0f}m/s"
+            f" | M{current_mach:.2f}"
+        )
+
+        font_size = 10
+
+    else:
+        # PC用：従来の詳細表示
+        status_text = (
             f"<b>T+{current_time:.1f}s</b><br>"
             f"高度: {current_altitude:,.1f}m<br>"
             f"速度: {current_speed:,.1f}m/s<br>"
             f"Mach: {current_mach:.2f}"
-        ),
+        )
+
+        font_size = 14
+
+    return {
+        "text": status_text,
         "x": 0.02,
         "y": 0.98,
         "xref": "paper",
@@ -386,7 +404,7 @@ def _create_status_annotation(
         "borderwidth": 1,
         "font": {
             "color": "white",
-            "size": 14,
+            "size": font_size,
         },
     }
 
@@ -708,6 +726,7 @@ def create_flight_animation_figure(
                         current_altitude=current_y,
                         current_speed=current_speed,
                         current_mach=current_mach,
+                        compact=mobile_mode,
                     )
                 ],
             ),
@@ -745,23 +764,30 @@ def create_flight_animation_figure(
         )
 
     if mobile_mode:
-        figure_height = 270
+        # スマホでは横長の動画プレイヤー風に表示する
+        figure_height = 215
 
         figure_margin = {
-            "l": 42,
-            "r": 10,
-            "t": 15,
-            "b": 55,
+            "l": 28,
+            "r": 8,
+            "t": 8,
+            "b": 45,
         }
 
-        slider_x = 0.43
-        slider_y = -0.12
-        slider_length = 0.54
+        slider_x = 0.48
+        slider_y = -0.13
+        slider_length = 0.49
 
         x_axis_title = None
+        y_axis_title = None
+
+        axis_font_size = 9
+        axis_tick_count = 5
 
     else:
+        # PC版は今までの表示を維持する
         figure_height = 650
+
         figure_margin = {
             "l": 65,
             "r": 30,
@@ -774,6 +800,17 @@ def create_flight_animation_figure(
         slider_length = 0.80
 
         x_axis_title = "Horizontal Position (m)"
+        y_axis_title = "Altitude (m)"
+
+        axis_font_size = 12
+        axis_tick_count = None
+
+    if mobile_mode:
+        play_label = "▶ 再生"
+        pause_label = "⏸"
+    else:
+        play_label = "▶ 再生"
+        pause_label = "⏸ 一時停止"
 
     figure.update_layout(
         height=figure_height,
@@ -793,9 +830,13 @@ def create_flight_animation_figure(
                 "rgba(255,255,255,0.15)"
             ),
             "zeroline": False,
+            "tickfont": {
+                "size": axis_font_size,
+            },
+            "nticks": axis_tick_count,
         },
         yaxis={
-            "title": "Altitude (m)",
+            "title": y_axis_title,
             "range": [
                 0,
                 y_max,
@@ -804,6 +845,10 @@ def create_flight_animation_figure(
                 "rgba(255,255,255,0.15)"
             ),
             "zeroline": False,
+            "tickfont": {
+                "size": axis_font_size,
+            },
+            "nticks": axis_tick_count,
         },
         showlegend=False,
 
@@ -860,6 +905,7 @@ def create_flight_animation_figure(
                         first_index
                     ]
                 ),
+                compact=mobile_mode,
             )
         ],
 
@@ -872,7 +918,7 @@ def create_flight_animation_figure(
                 "showactive": False,
                 "buttons": [
                     {
-                        "label": "▶ 再生",
+                        "label": play_label,
                         "method": "animate",
                         "args": [
                             None,
@@ -889,7 +935,7 @@ def create_flight_animation_figure(
                         ],
                     },
                     {
-                        "label": "⏸ 一時停止",
+                        "label": pause_label,
                         "method": "animate",
                         "args": [
                             [None],
