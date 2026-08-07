@@ -744,12 +744,12 @@ def create_flight_animation_figure(
         )
 
     figure.update_layout(
-        height=340,
+        height=270,
         margin={
-            "l": 45,
-            "r": 15,
-            "t": 35,
-            "b": 65,
+            "l": 42,
+            "r": 10,
+            "t": 15,
+            "b": 55,
         },
         paper_bgcolor="#071426",
         plot_bgcolor="#0d2746",
@@ -757,9 +757,7 @@ def create_flight_animation_figure(
             "color": "white",
         },
         xaxis={
-            "title": (
-                "Horizontal Position (m)"
-            ),
+            "title": None,
             "range": [
                 x_min - x_margin,
                 x_max,
@@ -887,14 +885,11 @@ def create_flight_animation_figure(
         sliders=[
             {
                 "active": 0,
-                "x": 0.18,
-                "y": -0.11,
-                "len": 0.80,
+                "x": 0.43,
+                "y": -0.12,
+                "len": 0.54,
                 "currentvalue": {
-                    "prefix": "時刻: ",
-                    "font": {
-                        "color": "white",
-                    },
+                    "visible": False,
                 },
                 "steps": slider_steps,
             }
