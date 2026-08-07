@@ -393,6 +393,7 @@ def _create_status_annotation(
 
 def create_flight_animation_figure(
     result: SimulationResult,
+        mobile_mode: bool = False,
 ) -> go.Figure:
     """
     Streamlit上で表示する飛行アニメーションを作成する。
@@ -743,21 +744,47 @@ def create_flight_animation_figure(
             }
         )
 
-    figure.update_layout(
-        height=270,
-        margin={
+    if mobile_mode:
+        figure_height = 270
+
+        figure_margin = {
             "l": 42,
             "r": 10,
             "t": 15,
             "b": 55,
-        },
+        }
+
+        slider_x = 0.43
+        slider_y = -0.12
+        slider_length = 0.54
+
+        x_axis_title = None
+
+    else:
+        figure_height = 650
+        figure_margin = {
+            "l": 65,
+            "r": 30,
+            "t": 75,
+            "b": 115,
+        }
+
+        slider_x = 0.18
+        slider_y = -0.11
+        slider_length = 0.80
+
+        x_axis_title = "Horizontal Position (m)"
+
+    figure.update_layout(
+        height=figure_height,
+        margin=figure_margin,
         paper_bgcolor="#071426",
         plot_bgcolor="#0d2746",
         font={
             "color": "white",
         },
         xaxis={
-            "title": None,
+            "title": x_axis_title,
             "range": [
                 x_min - x_margin,
                 x_max,
@@ -884,10 +911,9 @@ def create_flight_animation_figure(
 
         sliders=[
             {
-                "active": 0,
-                "x": 0.43,
-                "y": -0.12,
-                "len": 0.54,
+                "x": slider_x,
+                "y": slider_y,
+                "len": slider_length,
                 "currentvalue": {
                     "visible": False,
                 },

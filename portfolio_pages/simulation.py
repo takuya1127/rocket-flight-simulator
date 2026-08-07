@@ -10,6 +10,27 @@ from dashboard_visualizer import (
 from models import RocketConfig
 from rocket_simulation import simulate_rocket
 
+def is_mobile_device() -> bool:
+    """
+    ブラウザのUser-Agentから、スマートフォンかどうかを簡易判定する。
+    """
+
+    user_agent = st.context.headers.get(
+        "User-Agent",
+        "",
+    ).lower()
+
+    mobile_keywords = (
+        "iphone",
+        "android",
+        "mobile",
+    )
+
+    return any(
+        keyword in user_agent
+        for keyword in mobile_keywords
+    )
+
 # ========================================
 # 補助関数
 # ========================================
@@ -324,8 +345,13 @@ trajectory_column, event_column = st.columns(
 with trajectory_column:
     st.subheader("飛行リプレイ")
 
+    mobile_mode = is_mobile_device()
+
     flight_animation_figure = (
-        create_flight_animation_figure(result)
+        create_flight_animation_figure(
+            result,
+            mobile_mode=mobile_mode,
+        )
     )
 
     st.plotly_chart(
