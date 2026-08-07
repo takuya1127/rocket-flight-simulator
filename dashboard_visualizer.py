@@ -393,8 +393,8 @@ def _create_status_annotation(
 
     return {
         "text": status_text,
-        "x": 0.02,
-        "y": 0.98,
+        "x": 0.01,
+        "y": 0.99,
         "xref": "paper",
         "yref": "paper",
         "showarrow": False,
@@ -745,7 +745,9 @@ def create_flight_animation_figure(
             {
                 "method": "animate",
                 "label": (
-                    f"{result.times[index]:.1f}s"
+                    ""
+                    if mobile_mode
+                    else f"{result.times[index]:.1f}s"
                 ),
                 "args": [
                     [str(index)],
@@ -764,25 +766,27 @@ def create_flight_animation_figure(
         )
 
     if mobile_mode:
-        # スマホでは横長の動画プレイヤー風に表示する
-        figure_height = 215
+        figure_height = 205
 
         figure_margin = {
-            "l": 28,
+            "l": 8,
             "r": 8,
             "t": 8,
-            "b": 45,
+            "b": 42,
         }
 
-        slider_x = 0.48
+        slider_x = 0.34
         slider_y = -0.13
-        slider_length = 0.49
+        slider_length = 0.64
+
+        button_x = 0.01
+        button_y = -0.13
 
         x_axis_title = None
         y_axis_title = None
 
         axis_font_size = 9
-        axis_tick_count = 5
+        axis_tick_count = 4
 
     else:
         # PC版は今までの表示を維持する
@@ -830,9 +834,11 @@ def create_flight_animation_figure(
                 "rgba(255,255,255,0.15)"
             ),
             "zeroline": False,
+
             "tickfont": {
                 "size": axis_font_size,
             },
+
             "nticks": axis_tick_count,
         },
         yaxis={
@@ -845,9 +851,15 @@ def create_flight_animation_figure(
                 "rgba(255,255,255,0.15)"
             ),
             "zeroline": False,
+
+            # スマホでは縦軸文字を消して
+            # 飛行画面を横いっぱい使う
+            "showticklabels": not mobile_mode,
+
             "tickfont": {
                 "size": axis_font_size,
             },
+
             "nticks": axis_tick_count,
         },
         showlegend=False,
@@ -913,8 +925,8 @@ def create_flight_animation_figure(
             {
                 "type": "buttons",
                 "direction": "left",
-                "x": 0.0,
-                "y": -0.13,
+                "x": button_x,
+                "y": button_y,
                 "showactive": False,
                 "buttons": [
                     {
