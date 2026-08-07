@@ -342,11 +342,11 @@ def _create_sprite_layout_image(
         "x": position_x,
         "y": position_y,
         "sizex": max(
-            x_span * 0.055,
+            x_span * 0.09,
             1.0,
         ),
         "sizey": max(
-            y_span * 0.18,
+            y_span * 0.25,
             1.0,
         ),
         "xanchor": "center",
@@ -744,19 +744,12 @@ def create_flight_animation_figure(
         )
 
     figure.update_layout(
-        title={
-            "text": (
-                "Rocket Flight Simulator "
-                "— 2D Flight Replay"
-            ),
-            "x": 0.5,
-        },
-        height=650,
+        height=340,
         margin={
-            "l": 65,
-            "r": 30,
-            "t": 75,
-            "b": 115,
+            "l": 45,
+            "r": 15,
+            "t": 35,
+            "b": 65,
         },
         paper_bgcolor="#071426",
         plot_bgcolor="#0d2746",

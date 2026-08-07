@@ -108,19 +108,44 @@ st.caption(
 with st.sidebar:
     st.header("ロケット設定")
 
-    dry_mass = st.number_input(
-        "機体質量（kg）",
+    structure_mass = st.number_input(
+        "機体構造質量(kg)",
         min_value=0.1,
-        value=100.0,
-        step=10.0,
+        value=70.0,
+        step=5.0,
+    )
+
+    engine_mass = st.number_input(
+        "エンジン質量(kg)",
+        min_value=0.1,
+        value=20.0,
+        step=5.0,
+    )
+
+    payload_mass = st.number_input(
+        "ペイロード質量(kg)",
+        min_value=0.0,
+        value=10.0,
+        step=5.0,
     )
 
     fuel_mass = st.number_input(
-        "燃料質量（kg）",
+        "燃料質量(kg)",
         min_value=0.1,
         value=50.0,
-        step=10.0,
+        step=5.0,
     )
+
+    dry_mass  = (
+        structure_mass + engine_mass + payload_mass
+    )
+
+    initial_total_mass = (
+        dry_mass + fuel_mass
+    )
+
+    st.caption(f"乾燥質量:{dry_mass:.1f}kg")
+    st.caption(f"初期喪失量:{initial_total_mass:.1f}kg")
 
     thrust = st.number_input(
         "エンジン推力（N）",
@@ -172,7 +197,9 @@ with st.sidebar:
 
 if run_simulation:
     config = RocketConfig(
-        dry_mass=dry_mass,
+        structure_mass=structure_mass,
+        engine_mass=engine_mass,
+        payload_mass=payload_mass,
         fuel_mass=fuel_mass,
         thrust=thrust,
         burn_time=burn_time,
@@ -274,7 +301,7 @@ summary_columns[1].metric(
 summary_columns[2].metric(
     label="初期総質量",
     value=(
-        f"{config.dry_mass + config.fuel_mass:.1f} kg"
+        f"{config.initial_total_mass:.1f} kg"
     ),
 )
 
@@ -307,6 +334,7 @@ with trajectory_column:
         theme=None,
         config={
             "displaylogo": False,
+            "displayModeBar": False,
             "scrollZoom": False,
         },
     )
