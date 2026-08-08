@@ -2,10 +2,11 @@ import math
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from dashboard_visualizer import (
     create_flight_animation_figure,
-    create_mobile_flight_replay_figure,
+    create_mobile_flight_replay_html,
 )
 
 from models import RocketConfig
@@ -358,156 +359,21 @@ with trajectory_column:
     if mobile_mode:
         # ----------------------------------------
         # スマホ版
-        # Plotly内部の再生UIを使わず、
-        # グラフと操作UIを完全に分離する。
+        # Canvas + JavaScriptでブラウザ内だけで再生する。
+        # Python/Streamlitの連続再実行を行わないため軽量。
         # ----------------------------------------
 
-        data_count = min(
-            len(result.times),
-            len(result.positions_x),
-            len(result.positions_y),
-            len(result.velocities_x),
-            len(result.velocities_y),
-            len(result.mach_numbers),
-            len(result.flight_angles),
-            len(result.thrusts),
+        mobile_replay_html = (
+            create_mobile_flight_replay_html(
+                result
+            )
         )
 
-        max_replay_index = max(
-            data_count - 1,
-            0,
+        components.html(
+            mobile_replay_html,
+            height=355,
+            scrolling=False,
         )
-
-        replay_step = max(
-            1,
-            math.ceil(
-                max(data_count, 1) / 120
-            ),
-        )
-
-        if "mobile_replay_slider" not in st.session_state:
-            st.session_state["mobile_replay_slider"] = 0
-
-        if "mobile_replay_playing" not in st.session_state:
-            st.session_state["mobile_replay_playing"] = False
-
-        @st.fragment(run_every=0.15)
-        def render_mobile_replay() -> None:
-            # 再生中だけ次フレームへ進める。
-            # sliderウィジェット生成前にsession_stateを更新する。
-            current_index = int(
-                st.session_state.get(
-                    "mobile_replay_slider",
-                    0,
-                )
-            )
-
-            if st.session_state.get(
-                "mobile_replay_playing",
-                False,
-            ):
-                next_index = min(
-                    current_index + replay_step,
-                    max_replay_index,
-                )
-
-                st.session_state[
-                    "mobile_replay_slider"
-                ] = next_index
-
-                current_index = next_index
-
-                if current_index >= max_replay_index:
-                    st.session_state[
-                        "mobile_replay_playing"
-                    ] = False
-
-            mobile_figure = (
-                create_mobile_flight_replay_figure(
-                    result,
-                    current_index,
-                )
-            )
-
-            st.plotly_chart(
-                mobile_figure,
-                width="stretch",
-                theme=None,
-                config={
-                    "displaylogo": False,
-                    "displayModeBar": False,
-                    "scrollZoom": False,
-                    "responsive": True,
-                },
-                key="mobile_flight_replay_chart",
-            )
-
-            play_column, pause_column, slider_column = (
-                st.columns(
-                    [1, 1, 6],
-                    gap="small",
-                    vertical_alignment="center",
-                )
-            )
-
-            with play_column:
-                if st.button(
-                    "▶",
-                    key="mobile_replay_play",
-                    use_container_width=True,
-                ):
-                    # 最後まで到達している場合は先頭へ戻す
-                    if (
-                        st.session_state[
-                            "mobile_replay_slider"
-                        ]
-                        >= max_replay_index
-                    ):
-                        st.session_state[
-                            "mobile_replay_slider"
-                        ] = 0
-
-                    st.session_state[
-                        "mobile_replay_playing"
-                    ] = True
-
-            with pause_column:
-                if st.button(
-                    "Ⅱ",
-                    key="mobile_replay_pause",
-                    use_container_width=True,
-                ):
-                    st.session_state[
-                        "mobile_replay_playing"
-                    ] = False
-
-            with slider_column:
-                st.slider(
-                    "再生位置",
-                    min_value=0,
-                    max_value=max_replay_index,
-                    step=1,
-                    key="mobile_replay_slider",
-                    label_visibility="collapsed",
-                )
-
-            # グラフ内にも時刻は表示しているが、
-            # 操作中に現在位置が分かりやすいよう小さく補助表示する。
-            if result.times:
-                replay_time = result.times[
-                    int(
-                        st.session_state[
-                            "mobile_replay_slider"
-                        ]
-                    )
-                ]
-
-                st.caption(
-                    f"T+{replay_time:.1f}s / "
-                    f"{result.times[max_replay_index]:.1f}s"
-                )
-
-        render_mobile_replay()
 
     else:
         # ----------------------------------------

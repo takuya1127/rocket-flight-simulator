@@ -1,5 +1,6 @@
 import base64
 import io
+import json
 import math
 from functools import lru_cache
 from pathlib import Path
@@ -1283,3 +1284,384 @@ def create_mobile_flight_replay_figure(
 
     return figure
 
+
+
+def create_mobile_flight_replay_html(
+    result: SimulationResult,
+) -> str:
+    """
+    スマホ用の軽量飛行リプレイHTMLを作る。
+
+    初回に飛行データとPNGをブラウザへ渡し、
+    再生中はCanvas + requestAnimationFrameだけで動かす。
+    Streamlit/Pythonの連続再実行は行わない。
+    """
+
+    data_count = min(
+        len(result.times),
+        len(result.positions_x),
+        len(result.positions_y),
+        len(result.velocities_x),
+        len(result.velocities_y),
+        len(result.mach_numbers),
+        len(result.flight_angles),
+        len(result.thrusts),
+    )
+
+    if data_count <= 0:
+        return "<div>飛行データがありません。</div>"
+
+    max_points = 180
+    sample_step = max(
+        1,
+        math.ceil(data_count / max_points),
+    )
+
+    indexes = list(range(0, data_count, sample_step))
+    final_index = data_count - 1
+
+    if indexes[-1] != final_index:
+        indexes.append(final_index)
+
+    replay_data = []
+
+    for index in indexes:
+        speed = math.hypot(
+            result.velocities_x[index],
+            result.velocities_y[index],
+        )
+
+        replay_data.append(
+            {
+                "t": round(result.times[index], 3),
+                "x": round(result.positions_x[index], 3),
+                "y": round(result.positions_y[index], 3),
+                "speed": round(speed, 3),
+                "mach": round(result.mach_numbers[index], 4),
+                "angle": round(result.flight_angles[index], 2),
+                "burning": bool(result.thrusts[index] > 0),
+                "smoke": _calculate_smoke_level(result.times[index]),
+            }
+        )
+
+    rocket_body, rocket_flame, smoke = _load_sprite_parts()
+
+    data_json = json.dumps(
+        replay_data,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    body_json = json.dumps(_image_to_data_uri(rocket_body))
+    flame_json = json.dumps(_image_to_data_uri(rocket_flame))
+    smoke_json = json.dumps(_image_to_data_uri(smoke))
+
+    html = r'''<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: transparent; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .replay-wrap { width: 100%; }
+  .replay-card {
+    width: 100%;
+    background: #071426;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.10);
+  }
+  .canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    background: linear-gradient(180deg, #0b1d35 0%, #102c4f 62%, #15365b 100%);
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+  .timeline-row {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px 4px 12px;
+    background: #071426;
+  }
+  input[type="range"] { width: 100%; accent-color: #ff5a52; }
+  .external-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .control-btn {
+    height: 44px;
+    border-radius: 9px;
+    border: 1px solid #bcc4d0;
+    background: #ffffff;
+    color: #202735;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .control-btn:active { transform: scale(.98); }
+</style>
+</head>
+<body>
+<div class="replay-wrap">
+  <div class="replay-card">
+    <div class="canvas-wrap">
+      <canvas id="flightCanvas"></canvas>
+    </div>
+    <div class="timeline-row">
+      <input id="timeline" type="range" min="0" max="1000" value="0" step="1" aria-label="再生位置" />
+    </div>
+  </div>
+
+  <div class="external-controls">
+    <button id="playBtn" class="control-btn">▶ 再生</button>
+    <button id="pauseBtn" class="control-btn">Ⅱ 一時停止</button>
+  </div>
+</div>
+
+<script>
+const DATA = __DATA__;
+const PLAYBACK_DURATION = 10000;
+
+const canvas = document.getElementById('flightCanvas');
+const ctx = canvas.getContext('2d');
+const timeline = document.getElementById('timeline');
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+
+const bodyImg = new Image();
+const flameImg = new Image();
+const smokeImg = new Image();
+bodyImg.src = __BODY__;
+flameImg.src = __FLAME__;
+smokeImg.src = __SMOKE__;
+
+const xMax = Math.max(...DATA.map(p => p.x), 1);
+const yMaxRaw = Math.max(...DATA.map(p => p.y), 1);
+const yMax = yMaxRaw * 1.08;
+
+let playing = false;
+let progress = 0;
+let lastTimestamp = null;
+let rafId = null;
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw();
+}
+
+function formatAltitude(value) {
+  if (value >= 1000) return (value / 1000).toFixed(value >= 5000 ? 0 : 1) + 'km';
+  return Math.round(value) + 'm';
+}
+
+function getInterpolatedState(p) {
+  const scaled = p * (DATA.length - 1);
+  const i0 = Math.floor(scaled);
+  const i1 = Math.min(i0 + 1, DATA.length - 1);
+  const f = scaled - i0;
+  const a = DATA[i0];
+  const b = DATA[i1];
+  const lerp = (v0, v1) => v0 + (v1 - v0) * f;
+
+  return {
+    index: i0,
+    t: lerp(a.t, b.t),
+    x: lerp(a.x, b.x),
+    y: lerp(a.y, b.y),
+    speed: lerp(a.speed, b.speed),
+    mach: lerp(a.mach, b.mach),
+    angle: lerp(a.angle, b.angle),
+    burning: f < .5 ? a.burning : b.burning,
+    smoke: lerp(a.smoke, b.smoke),
+  };
+}
+
+function drawRocket(px, py, state) {
+  const rocketHeight = 46;
+  const bodyAspect = bodyImg.naturalWidth && bodyImg.naturalHeight
+    ? bodyImg.naturalWidth / bodyImg.naturalHeight
+    : 0.32;
+  const rocketWidth = rocketHeight * bodyAspect;
+
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate((90 - state.angle) * Math.PI / 180);
+
+  if (state.smoke > 0.3 && smokeImg.complete) {
+    ctx.globalAlpha = Math.min(.55, state.smoke / 10 * .55);
+    const sh = rocketHeight * 1.15;
+    const sw = sh * (smokeImg.naturalWidth / Math.max(smokeImg.naturalHeight, 1));
+    ctx.drawImage(smokeImg, -sw / 2, rocketHeight * .25, sw, sh);
+    ctx.globalAlpha = 1;
+  }
+
+  if (state.burning && flameImg.complete) {
+    const fh = rocketHeight * .72;
+    const fw = fh * (flameImg.naturalWidth / Math.max(flameImg.naturalHeight, 1));
+    ctx.drawImage(flameImg, -fw / 2, rocketHeight * .22, fw, fh);
+  }
+
+  if (bodyImg.complete) {
+    ctx.drawImage(bodyImg, -rocketWidth / 2, -rocketHeight / 2, rocketWidth, rocketHeight);
+  } else {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-4, -18, 8, 36);
+  }
+
+  ctx.restore();
+}
+
+function draw() {
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  if (!w || !h) return;
+
+  ctx.clearRect(0, 0, w, h);
+
+  const left = 46;
+  const right = 10;
+  const top = 34;
+  const bottom = 27;
+  const plotW = Math.max(1, w - left - right);
+  const plotH = Math.max(1, h - top - bottom);
+
+  const mapX = x => left + (x / xMax) * plotW;
+  const mapY = y => top + plotH - (y / yMax) * plotH;
+
+  ctx.lineWidth = 1;
+  ctx.font = '11px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+
+  for (let i = 0; i <= 4; i++) {
+    const ratio = i / 4;
+    const yValue = yMax * ratio;
+    const py = mapY(yValue);
+    ctx.strokeStyle = 'rgba(255,255,255,.18)';
+    ctx.beginPath();
+    ctx.moveTo(left, py);
+    ctx.lineTo(w - right, py);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.fillText(formatAltitude(yValue), left - 6, py);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let i = 0; i <= 4; i++) {
+    const ratio = i / 4;
+    const xValue = xMax * ratio;
+    const px = mapX(xValue);
+    ctx.strokeStyle = 'rgba(255,255,255,.13)';
+    ctx.beginPath();
+    ctx.moveTo(px, top);
+    ctx.lineTo(px, top + plotH);
+    ctx.stroke();
+    if (i === 0 || i === 2 || i === 4) {
+      ctx.fillStyle = 'rgba(255,255,255,.80)';
+      ctx.fillText(Math.round(xValue) + 'm', px, top + plotH + 5);
+    }
+  }
+
+  ctx.strokeStyle = '#4ea057';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(left, mapY(0));
+  ctx.lineTo(w - right, mapY(0));
+  ctx.stroke();
+
+  const state = getInterpolatedState(progress);
+
+  ctx.strokeStyle = '#ff5a52';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  let started = false;
+  const endFloat = progress * (DATA.length - 1);
+  const endIndex = Math.floor(endFloat);
+  for (let i = 0; i <= endIndex; i++) {
+    const p = DATA[i];
+    const px = mapX(p.x);
+    const py = mapY(p.y);
+    if (!started) { ctx.moveTo(px, py); started = true; }
+    else ctx.lineTo(px, py);
+  }
+  ctx.lineTo(mapX(state.x), mapY(state.y));
+  ctx.stroke();
+
+  drawRocket(mapX(state.x), mapY(state.y), state);
+
+  const status = `T+${state.t.toFixed(1)}s | ${(state.y / 1000).toFixed(2)}km | ${Math.round(state.speed)}m/s | M${state.mach.toFixed(2)}`;
+  ctx.font = '600 12px system-ui, -apple-system, sans-serif';
+  const tw = ctx.measureText(status).width;
+  ctx.fillStyle = 'rgba(4,10,19,.82)';
+  ctx.fillRect(left + 4, 5, tw + 12, 24);
+  ctx.strokeStyle = '#ff5a52';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(left + 4, 5, tw + 12, 24);
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(status, left + 10, 17);
+}
+
+function animate(timestamp) {
+  if (!playing) return;
+  if (lastTimestamp === null) lastTimestamp = timestamp;
+  const delta = timestamp - lastTimestamp;
+  lastTimestamp = timestamp;
+
+  progress += delta / PLAYBACK_DURATION;
+  if (progress >= 1) {
+    progress = 1;
+    playing = false;
+  }
+
+  timeline.value = Math.round(progress * 1000);
+  draw();
+
+  if (playing) rafId = requestAnimationFrame(animate);
+}
+
+playBtn.addEventListener('click', () => {
+  if (progress >= 1) progress = 0;
+  if (!playing) {
+    playing = true;
+    lastTimestamp = null;
+    rafId = requestAnimationFrame(animate);
+  }
+});
+
+pauseBtn.addEventListener('click', () => {
+  playing = false;
+  lastTimestamp = null;
+  if (rafId) cancelAnimationFrame(rafId);
+});
+
+timeline.addEventListener('input', () => {
+  progress = Number(timeline.value) / 1000;
+  lastTimestamp = null;
+  draw();
+});
+
+window.addEventListener('resize', resizeCanvas);
+[bodyImg, flameImg, smokeImg].forEach(img => img.addEventListener('load', draw));
+resizeCanvas();
+</script>
+</body>
+</html>'''
+
+    return (
+        html
+        .replace("__DATA__", data_json)
+        .replace("__BODY__", body_json)
+        .replace("__FLAME__", flame_json)
+        .replace("__SMOKE__", smoke_json)
+    )
