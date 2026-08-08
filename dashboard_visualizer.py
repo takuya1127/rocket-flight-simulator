@@ -766,28 +766,27 @@ def create_flight_animation_figure(
         )
 
     if mobile_mode:
-        # コントロール行（再生ボタン＋スライダー）を
-        # チャート下の余白へきれいに収めるため、
-        # 全体を少し高くしてボトム余白を広めに取る。
-        figure_height = 260
+        # コントロール行はできるだけ薄くして、
+        # グラフの表示領域を最大化する。
+        figure_height = 230
 
         figure_margin = {
             "l": 2,
             "r": 2,
             "t": 4,
-            "b": 54,
+            "b": 34,
         }
 
         # ボタンとスライダーを同じ高さ（同じy）に揃えて
-        # 横一列に並べる。
-        controls_y = 0.10
+        # 細い一列に並べる。
+        controls_y = 0.14
 
         button_x = 0.02
         button_y = controls_y
 
-        slider_x = 0.30
+        slider_x = 0.17
         slider_y = controls_y
-        slider_length = 0.68
+        slider_length = 0.81
 
         x_axis_title = None
         y_axis_title = None
@@ -821,25 +820,35 @@ def create_flight_animation_figure(
 
     if mobile_mode:
         x_domain = [0.00, 1.00]
-        y_domain = [0.30, 1.00]
+
+        # 以前はグラフ下側に大きな余白（0.30）を
+        # 確保していたが、ロケットが画面下端付近に
+        # いる時間はごく短いため、必要最小限まで縮めて
+        # チャート自体の表示を大きくする。
+        y_domain = [0.04, 1.00]
 
         # スマホでは横幅が限られるため、
         # アイコンのみのコンパクトなラベルにする。
+        # 注意: "⏸"（U+23F8）はiOS等でフォントサイズを
+        # 無視した大きな絵文字として描画されることがあり、
+        # それがボタンを不自然に大きくしていた原因。
+        # 絵文字化されない記号に置き換える。
         play_label = "▶"
-        pause_label = "⏸"
+        pause_label = "‖‖"
 
         # ボタンを左→右の順で並べ、
         # スライダーと同じダーク系の見た目に揃える。
+        # pad/fontを極力小さくし、細いコントロール行に収める。
         button_style = {
             "direction": "right",
             "pad": {
-                "l": 4,
-                "r": 4,
-                "t": 2,
-                "b": 2,
+                "l": 2,
+                "r": 2,
+                "t": 0,
+                "b": 0,
             },
             "font": {
-                "size": 13,
+                "size": 11,
                 "color": "white",
             },
             "bgcolor": "#132a4a",
@@ -849,8 +858,8 @@ def create_flight_animation_figure(
 
         slider_style = {
             "pad": {
-                "t": 6,
-                "b": 2,
+                "t": 4,
+                "b": 0,
             },
             "ticklen": 0,
             "tickcolor": "rgba(0,0,0,0)",
@@ -863,7 +872,7 @@ def create_flight_animation_figure(
         x_domain = [0.00, 1.00]
         y_domain = [0.00, 1.00]
         play_label = "▶ 再生"
-        pause_label = "⏸ 一時停止"
+        pause_label = "‖‖ 一時停止"
 
         # PC版は元のPlotly標準スタイルのまま。
         button_style = {
