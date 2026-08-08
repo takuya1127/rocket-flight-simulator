@@ -766,21 +766,28 @@ def create_flight_animation_figure(
         )
 
     if mobile_mode:
-        figure_height = 210
+        # コントロール行（再生ボタン＋スライダー）を
+        # チャート下の余白へきれいに収めるため、
+        # 全体を少し高くしてボトム余白を広めに取る。
+        figure_height = 260
 
         figure_margin = {
-            "l": 4,
-            "r": 4,
+            "l": 2,
+            "r": 2,
             "t": 4,
-            "b": 8,
+            "b": 54,
         }
 
-        slider_x = 0.32
-        slider_y = 0.05
-        slider_length = 0.66
+        # ボタンとスライダーを同じ高さ（同じy）に揃えて
+        # 横一列に並べる。
+        controls_y = 0.10
 
-        button_x = 0.01
-        button_y = -0.05
+        button_x = 0.02
+        button_y = controls_y
+
+        slider_x = 0.30
+        slider_y = controls_y
+        slider_length = 0.68
 
         x_axis_title = None
         y_axis_title = None
@@ -803,6 +810,9 @@ def create_flight_animation_figure(
         slider_y = -0.11
         slider_length = 0.80
 
+        button_x = 0.01
+        button_y = -0.05
+
         x_axis_title = "Horizontal Position (m)"
         y_axis_title = "Altitude (m)"
 
@@ -811,14 +821,57 @@ def create_flight_animation_figure(
 
     if mobile_mode:
         x_domain = [0.00, 1.00]
-        y_domain = [0.25, 1.00]
-        play_label = "▶ 再生"
+        y_domain = [0.30, 1.00]
+
+        # スマホでは横幅が限られるため、
+        # アイコンのみのコンパクトなラベルにする。
+        play_label = "▶"
         pause_label = "⏸"
+
+        # ボタンを左→右の順で並べ、
+        # スライダーと同じダーク系の見た目に揃える。
+        button_style = {
+            "direction": "right",
+            "pad": {
+                "l": 4,
+                "r": 4,
+                "t": 2,
+                "b": 2,
+            },
+            "font": {
+                "size": 13,
+                "color": "white",
+            },
+            "bgcolor": "#132a4a",
+            "bordercolor": "#ff4b4b",
+            "borderwidth": 1,
+        }
+
+        slider_style = {
+            "pad": {
+                "t": 6,
+                "b": 2,
+            },
+            "thickness": 0.10,
+            "ticklen": 0,
+            "tickcolor": "rgba(0,0,0,0)",
+            "bgcolor": "rgba(255,255,255,0.25)",
+            "activebgcolor": "#ff4b4b",
+            "bordercolor": "rgba(0,0,0,0)",
+            "borderwidth": 0,
+        }
     else:
         x_domain = [0.00, 1.00]
         y_domain = [0.00, 1.00]
         play_label = "▶ 再生"
         pause_label = "⏸ 一時停止"
+
+        # PC版は元のPlotly標準スタイルのまま。
+        button_style = {
+            "direction": "left",
+        }
+
+        slider_style = {}
 
     figure.update_layout(
         autosize=True,
@@ -932,10 +985,10 @@ def create_flight_animation_figure(
         updatemenus=[
             {
                 "type": "buttons",
-                "direction": "left",
                 "x": button_x,
                 "y": button_y,
                 "showactive": False,
+                **button_style,
                 "buttons": [
                     {
                         "label": play_label,
@@ -983,6 +1036,7 @@ def create_flight_animation_figure(
                 "currentvalue": {
                     "visible": False,
                 },
+                **slider_style,
                 "steps": slider_steps,
             }
         ],
