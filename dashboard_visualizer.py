@@ -1051,3 +1051,235 @@ def create_flight_animation_figure(
     )
 
     return figure
+
+
+def create_mobile_flight_replay_figure(
+    result: SimulationResult,
+    frame_index: int,
+) -> go.Figure:
+    """
+    スマホ用の飛行リプレイを1フレームだけ描画する。
+
+    Plotly内部には再生ボタンやスライダーを置かない。
+    操作UIをStreamlit側へ分離することで、
+    グラフ領域をスマホの横幅いっぱいまで利用する。
+    """
+
+    if (
+        not result.times
+        or not result.positions_x
+        or not result.positions_y
+    ):
+        return go.Figure()
+
+    data_count = min(
+        len(result.times),
+        len(result.positions_x),
+        len(result.positions_y),
+        len(result.velocities_x),
+        len(result.velocities_y),
+        len(result.mach_numbers),
+        len(result.flight_angles),
+        len(result.thrusts),
+    )
+
+    if data_count == 0:
+        return go.Figure()
+
+    index = max(
+        0,
+        min(
+            int(frame_index),
+            data_count - 1,
+        ),
+    )
+
+    valid_positions_x = result.positions_x[:data_count]
+    valid_positions_y = result.positions_y[:data_count]
+
+    min_position_x = min(valid_positions_x)
+    max_position_x = max(valid_positions_x)
+    max_position_y = max(valid_positions_y)
+
+    x_range_size = max(
+        max_position_x - min_position_x,
+        1.0,
+    )
+
+    # スマホでは左右余白を小さくし、軌道をできるだけ大きく見せる。
+    x_margin = max(
+        x_range_size * 0.025,
+        1.0,
+    )
+
+    y_margin = max(
+        max_position_y * 0.08,
+        1.0,
+    )
+
+    x_min = min(
+        0.0,
+        min_position_x,
+    )
+
+    x_max = max_position_x + x_margin
+    y_max = max_position_y + y_margin
+
+    x_span = max(
+        x_max - (x_min - x_margin),
+        1.0,
+    )
+
+    y_span = max(
+        y_max,
+        1.0,
+    )
+
+    current_time = result.times[index]
+    current_x = result.positions_x[index]
+    current_y = result.positions_y[index]
+
+    current_speed = math.hypot(
+        result.velocities_x[index],
+        result.velocities_y[index],
+    )
+
+    current_mach = result.mach_numbers[index]
+    rounded_angle = round(result.flight_angles[index])
+    engine_is_burning = result.thrusts[index] > 0
+
+    smoke_level = _calculate_smoke_level(
+        current_time
+    )
+
+    sprite_source = _create_rocket_sprite_data_uri(
+        rounded_angle,
+        engine_is_burning,
+        smoke_level,
+    )
+
+    figure = go.Figure(
+        data=[
+            go.Scatter(
+                x=result.positions_x[: index + 1],
+                y=result.positions_y[: index + 1],
+                mode="lines",
+                line={
+                    "color": "#ff5a52",
+                    "width": 3,
+                },
+                hoverinfo="skip",
+                showlegend=False,
+            ),
+            go.Scatter(
+                x=[current_x],
+                y=[current_y],
+                mode="markers",
+                marker={
+                    "size": 8,
+                    "color": "rgba(255,255,255,0.01)",
+                },
+                hovertemplate=(
+                    f"時刻: {current_time:.1f}秒"
+                    "<br>"
+                    f"X座標: {current_x:.1f}m"
+                    "<br>"
+                    f"高度: {current_y:.1f}m"
+                    "<br>"
+                    f"速度: {current_speed:.1f}m/s"
+                    "<br>"
+                    f"Mach: {current_mach:.2f}"
+                    "<extra></extra>"
+                ),
+                showlegend=False,
+            ),
+        ]
+    )
+
+    figure.update_layout(
+        autosize=True,
+        height=230,
+        margin={
+            "l": 2,
+            "r": 2,
+            "t": 4,
+            "b": 24,
+        },
+        paper_bgcolor="#071426",
+        plot_bgcolor="#0d2746",
+        font={
+            "color": "white",
+        },
+        xaxis={
+            "title": None,
+            "range": [
+                x_min - x_margin,
+                x_max,
+            ],
+            "domain": [0.0, 1.0],
+            "gridcolor": "rgba(255,255,255,0.15)",
+            "zeroline": False,
+            "showticklabels": True,
+            "tickfont": {
+                "size": 9,
+            },
+            "nticks": 4,
+            "ticks": "",
+            "automargin": False,
+            "fixedrange": True,
+        },
+        yaxis={
+            "title": None,
+            "range": [
+                0,
+                y_max,
+            ],
+            "domain": [0.0, 1.0],
+            "gridcolor": "rgba(255,255,255,0.15)",
+            "zeroline": False,
+            "showgrid": True,
+            "showticklabels": False,
+            "ticks": "",
+            "automargin": False,
+            "fixedrange": True,
+        },
+        showlegend=False,
+        images=[
+            _create_sprite_layout_image(
+                image_source=sprite_source,
+                position_x=current_x,
+                position_y=current_y,
+                x_span=x_span,
+                y_span=y_span,
+            )
+        ],
+        shapes=[
+            {
+                "type": "rect",
+                "x0": x_min - x_margin,
+                "x1": x_max,
+                "y0": 0,
+                "y1": max(
+                    y_max * 0.008,
+                    0.5,
+                ),
+                "fillcolor": "#3c8c40",
+                "line": {
+                    "width": 0,
+                },
+                "layer": "below",
+            }
+        ],
+        annotations=[
+            _create_status_annotation(
+                current_time=current_time,
+                current_altitude=current_y,
+                current_speed=current_speed,
+                current_mach=current_mach,
+                compact=True,
+            )
+        ],
+    )
+
+    return figure
+
