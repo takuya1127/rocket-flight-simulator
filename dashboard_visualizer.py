@@ -821,6 +821,7 @@ def create_flight_animation_figure(
         pause_label = "⏸ 一時停止"
 
     figure.update_layout(
+        autosize=True,
         height=figure_height,
         margin=figure_margin,
         paper_bgcolor="#071426",
@@ -849,6 +850,7 @@ def create_flight_animation_figure(
         yaxis={
             "title": y_axis_title,
             "domain": y_domain,
+            "visible": not mobile_mode,
             "range": [
                 0,
                 y_max,
