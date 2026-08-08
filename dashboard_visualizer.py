@@ -766,21 +766,21 @@ def create_flight_animation_figure(
         )
 
     if mobile_mode:
-        figure_height = 205
+        figure_height = 210
 
         figure_margin = {
-            "l": 8,
-            "r": 8,
-            "t": 8,
-            "b": 42,
+            "l": 4,
+            "r": 4,
+            "t": 4,
+            "b": 8,
         }
 
-        slider_x = 0.34
-        slider_y = -0.13
-        slider_length = 0.64
+        slider_x = 0.32
+        slider_y = 0.05
+        slider_length = 0.66
 
         button_x = 0.01
-        button_y = -0.13
+        button_y = -0.05
 
         x_axis_title = None
         y_axis_title = None
@@ -810,9 +810,13 @@ def create_flight_animation_figure(
         axis_tick_count = None
 
     if mobile_mode:
+        x_domain = [0.00, 1.00]
+        y_domain = [0.25, 1.00]
         play_label = "▶ 再生"
         pause_label = "⏸"
     else:
+        x_domain = [0.00, 1.00]
+        y_domain = [0.00, 1.00]
         play_label = "▶ 再生"
         pause_label = "⏸ 一時停止"
 
@@ -826,6 +830,7 @@ def create_flight_animation_figure(
         },
         xaxis={
             "title": x_axis_title,
+            "domain": x_domain,
             "range": [
                 x_min - x_margin,
                 x_max,
@@ -843,6 +848,7 @@ def create_flight_animation_figure(
         },
         yaxis={
             "title": y_axis_title,
+            "domain": y_domain,
             "range": [
                 0,
                 y_max,
