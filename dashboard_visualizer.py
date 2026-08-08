@@ -15,6 +15,9 @@ ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
 ROCKET_BODY_PATH = ASSET_DIRECTORY / "rocket_body.png"
 ROCKET_FLAME_PATH = ASSET_DIRECTORY / "rocket_flame.png"
 SMOKE_PATH = ASSET_DIRECTORY / "smoke.png"
+CLOUD_01_PATH = ASSET_DIRECTORY / "cloud_01.png"
+CLOUD_02_PATH = ASSET_DIRECTORY / "cloud_02.png"
+CLOUD_03_PATH = ASSET_DIRECTORY / "cloud_03.png"
 
 
 def _open_rgba(path: Path) -> Image.Image:
@@ -96,6 +99,38 @@ def _load_sprite_parts() -> tuple[
         rocket_flame,
         smoke,
     )
+
+
+@lru_cache(maxsize=1)
+def _load_clouds() -> tuple[Image.Image, Image.Image, Image.Image]:
+    """背景用の3種類の雲PNGを読み込む。"""
+    return (
+        _trim_transparent_margin(_open_rgba(CLOUD_01_PATH)),
+        _trim_transparent_margin(_open_rgba(CLOUD_02_PATH)),
+        _trim_transparent_margin(_open_rgba(CLOUD_03_PATH)),
+    )
+
+
+def _create_background_layout_images(x_min: float, x_max: float, y_max: float) -> list[dict]:
+    """PC版Plotly用。雲を飛行領域の背景に固定配置する。"""
+    clouds = _load_clouds()
+    cloud_uris = [_image_to_data_uri(image) for image in clouds]
+    x_span = max(x_max - x_min, 1.0)
+    placements = [
+        (0.18, 0.13, 0.26, 0.12, 0.46),
+        (0.70, 0.22, 0.34, 0.10, 0.34),
+        (0.43, 0.34, 0.18, 0.08, 0.28),
+    ]
+    images = []
+    for uri, (xr, yr, wr, hr, opacity) in zip(cloud_uris, placements):
+        images.append({
+            "source": uri, "xref": "x", "yref": "y",
+            "x": x_min + x_span * xr, "y": y_max * yr,
+            "sizex": x_span * wr, "sizey": y_max * hr,
+            "xanchor": "center", "yanchor": "middle",
+            "sizing": "contain", "opacity": opacity, "layer": "below",
+        })
+    return images
 
 
 def _set_opacity(
@@ -534,6 +569,10 @@ def create_flight_animation_figure(
         1.0,
     )
 
+    background_images = _create_background_layout_images(
+        x_min - x_margin, x_max, y_max
+    )
+
     first_index = (
         frame_indexes[0]
     )
@@ -712,7 +751,7 @@ def create_flight_animation_figure(
                 ),
             ],
             layout=go.Layout(
-                images=[
+                images=background_images + [
                     _create_sprite_layout_image(
                         image_source=sprite_source,
                         position_x=current_x,
@@ -934,7 +973,7 @@ def create_flight_animation_figure(
         },
         showlegend=False,
 
-        images=[
+        images=background_images + [
             _create_sprite_layout_image(
                 image_source=first_sprite,
                 position_x=(
@@ -953,6 +992,21 @@ def create_flight_animation_figure(
         ],
 
         shapes=[
+            {
+                "type": "rect", "xref": "paper", "yref": "paper",
+                "x0": 0, "x1": 1, "y0": 0.00, "y1": 0.38,
+                "fillcolor": "#1769a8", "line": {"width": 0}, "layer": "below",
+            },
+            {
+                "type": "rect", "xref": "paper", "yref": "paper",
+                "x0": 0, "x1": 1, "y0": 0.38, "y1": 0.72,
+                "fillcolor": "#0b3b72", "line": {"width": 0}, "layer": "below",
+            },
+            {
+                "type": "rect", "xref": "paper", "yref": "paper",
+                "x0": 0, "x1": 1, "y0": 0.72, "y1": 1.00,
+                "fillcolor": "#071426", "line": {"width": 0}, "layer": "below",
+            },
             {
                 "type": "rect",
                 "x0": (
@@ -1345,6 +1399,7 @@ def create_mobile_flight_replay_html(
         )
 
     rocket_body, rocket_flame, smoke = _load_sprite_parts()
+    cloud_01, cloud_02, cloud_03 = _load_clouds()
 
     data_json = json.dumps(
         replay_data,
@@ -1355,6 +1410,9 @@ def create_mobile_flight_replay_html(
     body_json = json.dumps(_image_to_data_uri(rocket_body))
     flame_json = json.dumps(_image_to_data_uri(rocket_flame))
     smoke_json = json.dumps(_image_to_data_uri(smoke))
+    cloud_01_json = json.dumps(_image_to_data_uri(cloud_01))
+    cloud_02_json = json.dumps(_image_to_data_uri(cloud_02))
+    cloud_03_json = json.dumps(_image_to_data_uri(cloud_03))
 
     html = r'''<!doctype html>
 <html lang="ja">
@@ -1375,8 +1433,8 @@ def create_mobile_flight_replay_html(
   .canvas-wrap {
     position: relative;
     width: 100%;
-    height: 250px;
-    background: linear-gradient(180deg, #0b1d35 0%, #102c4f 62%, #15365b 100%);
+    height: clamp(250px, 42vw, 430px);
+    background: #071426;
   }
   canvas { display: block; width: 100%; height: 100%; }
   .timeline-row {
@@ -1435,9 +1493,15 @@ const pauseBtn = document.getElementById('pauseBtn');
 const bodyImg = new Image();
 const flameImg = new Image();
 const smokeImg = new Image();
+const cloud1Img = new Image();
+const cloud2Img = new Image();
+const cloud3Img = new Image();
 bodyImg.src = __BODY__;
 flameImg.src = __FLAME__;
 smokeImg.src = __SMOKE__;
+cloud1Img.src = __CLOUD1__;
+cloud2Img.src = __CLOUD2__;
+cloud3Img.src = __CLOUD3__;
 
 const xMax = Math.max(...DATA.map(p => p.x), 1);
 const yMaxRaw = Math.max(...DATA.map(p => p.y), 1);
@@ -1519,6 +1583,40 @@ function drawRocket(px, py, state) {
   ctx.restore();
 }
 
+function drawAtmosphere(w, h, left, top, plotW, plotH) {
+  // 高度が上がるほど「空 → 高層大気 → 宇宙」へ自然に変化。
+  const g = ctx.createLinearGradient(0, top + plotH, 0, top);
+  g.addColorStop(0.00, '#238bd0');
+  g.addColorStop(0.35, '#1769a8');
+  g.addColorStop(0.68, '#0b3b72');
+  g.addColorStop(0.88, '#071b38');
+  g.addColorStop(1.00, '#020611');
+  ctx.fillStyle = g;
+  ctx.fillRect(left, top, plotW, plotH);
+
+  // 上空だけ星を描く。画像を増やさないので軽い。
+  ctx.fillStyle = 'rgba(255,255,255,.72)';
+  for (let i = 0; i < 30; i++) {
+    const sx = left + ((i * 83) % 997) / 997 * plotW;
+    const sy = top + ((i * 47) % 211) / 211 * plotH * .25;
+    const r = (i % 4 === 0) ? 1.15 : .65;
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  const clouds = [
+    [cloud1Img, .18, .80, .30, .18, .70],
+    [cloud2Img, .68, .73, .38, .14, .55],
+    [cloud3Img, .48, .62, .20, .11, .42],
+  ];
+  for (const [img, xr, yr, wr, hr, alpha] of clouds) {
+    if (!img.complete || !img.naturalWidth) continue;
+    const cw = plotW * wr, ch = plotH * hr;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(img, left + plotW * xr - cw / 2, top + plotH * yr - ch / 2, cw, ch);
+  }
+  ctx.globalAlpha = 1;
+}
+
 function draw() {
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -1532,6 +1630,8 @@ function draw() {
   const bottom = 27;
   const plotW = Math.max(1, w - left - right);
   const plotH = Math.max(1, h - top - bottom);
+
+  drawAtmosphere(w, h, left, top, plotW, plotH);
 
   const mapX = x => left + (x / xMax) * plotW;
   const mapY = y => top + plotH - (y / yMax) * plotH;
@@ -1652,7 +1752,7 @@ timeline.addEventListener('input', () => {
 });
 
 window.addEventListener('resize', resizeCanvas);
-[bodyImg, flameImg, smokeImg].forEach(img => img.addEventListener('load', draw));
+[bodyImg, flameImg, smokeImg, cloud1Img, cloud2Img, cloud3Img].forEach(img => img.addEventListener('load', draw));
 resizeCanvas();
 </script>
 </body>
@@ -1664,4 +1764,7 @@ resizeCanvas();
         .replace("__BODY__", body_json)
         .replace("__FLAME__", flame_json)
         .replace("__SMOKE__", smoke_json)
+        .replace("__CLOUD1__", cloud_01_json)
+        .replace("__CLOUD2__", cloud_02_json)
+        .replace("__CLOUD3__", cloud_03_json)
     )
