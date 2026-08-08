@@ -852,7 +852,6 @@ def create_flight_animation_figure(
                 "t": 6,
                 "b": 2,
             },
-            "thickness": 0.10,
             "ticklen": 0,
             "tickcolor": "rgba(0,0,0,0)",
             "bgcolor": "rgba(255,255,255,0.25)",
