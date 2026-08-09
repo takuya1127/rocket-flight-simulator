@@ -10,7 +10,7 @@ from dashboard_visualizer import (
 
 from models import RocketConfig
 from rocket_simulation import simulate_rocket
-from flight_event import FlightEventType, FlightEvent
+from flight_event import FlightEventType
 
 
 # ========================================
@@ -91,8 +91,8 @@ def create_flight_dataframe(
             "総質量（kg）": result.total_masses,
             "燃料残量（kg）": result.remaining_fuels,
             "推力（N）": result.thrusts,
-            "推進剤流量(kg/s)": result.mass_flow_rates,
-            "比推力(s)": result.specific_impulses,
+            "推進剤流量（kg/s）": result.mass_flow_rates,
+            "比推力（s）": result.specific_impulses,
             "推力重量比": result.thrust_to_weight_ratios,
         }
     )
@@ -517,54 +517,65 @@ with tab_vehicle:
     )
 
 # ========================================
-# エンジン性能サマリー
+# 推進性能
 # ========================================
 
-st.subheader("エンジン性能サマリー")
+with tab_propulsion:
 
-max_thrust = max(
-    result.thrusts,
-    default=0.0,
-)
+    # ========================================
+    # エンジン性能サマリー
+    # ========================================
 
-max_mass_flow_rate = max(
-    result.mass_flow_rates,
-    default=0.0,
-)
+    st.subheader("エンジン性能サマリー")
 
-max_specific_impulse = max(
-    result.specific_impulses,
-    default=0.0,
-)
-
-max_thrust_to_weight_ratio = max(
-    result.thrust_to_weight_ratios,
-    default=0.0,
-)
-
-#推力を時間積分して総力積を求める
-total_impulse = 0.0
-for index in range(
-    len(result.times) -1
-):
-    time_interval = (
-        result.times[index + 1] - result.times[index]
+    max_thrust = max(
+        result.thrusts,
+        default=0.0,
     )
 
-    average_thrust = (
-        result.thrusts[index] + result.thrusts[index + 1]
-    ) / 2
-
-    total_impulse += (
-            average_thrust * time_interval
+    max_mass_flow_rate = max(
+        result.mass_flow_rates,
+        default=0.0,
     )
 
-    #Launchイベントから実際のリフトオフ時刻を取得
+    max_specific_impulse = max(
+        result.specific_impulses,
+        default=0.0,
+    )
+
+    max_thrust_to_weight_ratio = max(
+        result.thrust_to_weight_ratios,
+        default=0.0,
+    )
+
+    # 推力を時間積分して総力積を求める
+    total_impulse = 0.0
+
+    for index in range(
+        len(result.times) - 1
+    ):
+        time_interval = (
+            result.times[index + 1]
+            - result.times[index]
+        )
+
+        average_thrust = (
+            result.thrusts[index]
+            + result.thrusts[index + 1]
+        ) / 2
+
+        total_impulse += (
+            average_thrust
+            * time_interval
+        )
+
+    # Launchイベントから実際のリフトオフ時刻を取得
     launch_event = next(
         (
             event
             for event in result.flight_events
-            if event.event_type == FlightEvent.LAUNCH
+            if event.event_type
+            == FlightEventType.LAUNCH
         ),
         None,
     )
@@ -579,17 +590,35 @@ for index in range(
 
     performance_columns[0].metric(
         label="最大推力",
-        value=f"{max_thrust:,.0f}N"
+        value=f"{max_thrust:,.0f} N",
     )
+
     performance_columns[1].metric(
         label="最大推進剤流量",
-        value="f{max_mass_flow_rate:.2f}kg/s"
+        value=f"{max_mass_flow_rate:.2f} kg/s",
+    )
+
+    performance_columns[2].metric(
+        label="比推力",
+        value=f"{max_specific_impulse:.1f} s",
+    )
+
+    performance_columns = st.columns(3)
+
+    performance_columns[0].metric(
+        label="最大推力重量比",
+        value=f"{max_thrust_to_weight_ratio:.2f}",
+    )
+
+    performance_columns[1].metric(
+        label="総力積",
+        value=f"{total_impulse / 1000:.1f} kN·s",
     )
 
     performance_columns[2].metric(
         label="リフトオフ時刻",
         value=(
-            f"T+{liftoff_time:.1f}s"
+            f"T+{liftoff_time:.1f} s"
             if liftoff_time is not None
             else "Not launched"
         ),
@@ -597,11 +626,10 @@ for index in range(
 
     st.divider()
 
-# ========================================
-# 推進性能
-# ========================================
+    # ========================================
+    # 推進性能グラフ
+    # ========================================
 
-with tab_propulsion:
     st.subheader("推力")
     st.line_chart(
         flight_dataframe.set_index(
@@ -620,7 +648,7 @@ with tab_propulsion:
             "時刻（秒）"
         )[
             [
-                "推進剤流量(kg/s)",
+                "推進剤流量（kg/s）",
             ]
         ],
         height=320,
@@ -632,7 +660,7 @@ with tab_propulsion:
             "時刻（秒）"
         )[
             [
-                "比推力(s)",
+                "比推力（s）",
             ]
         ],
         height=320,
