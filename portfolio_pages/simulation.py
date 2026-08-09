@@ -540,7 +540,7 @@ with tab_vehicle:
     st.subheader("推進剤流量")
     st.line_chart(
         flight_dataframe.set_index(
-            "時刻(秒)"
+            "時刻（秒）"
         )[
             [
                 "推進剤流量(kg/s)",
@@ -552,7 +552,7 @@ with tab_vehicle:
     st.subheader("比推力")
     st.line_chart(
         flight_dataframe.set_index(
-            "時刻(秒)"
+            "時刻（秒）"
         )[
             [
                 "比推力(s)",
@@ -563,7 +563,7 @@ with tab_vehicle:
 
     st.line_chart(
         flight_dataframe.set_index(
-            "時刻(秒)"
+            "時刻（秒）"
         )[
             [
                 "推力重量比",
