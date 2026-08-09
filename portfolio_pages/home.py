@@ -4,12 +4,13 @@ import streamlit as st
 st.title("🚀 Rocket Flight Simulator")
 
 st.subheader(
-    "Pythonによる2次元ロケット飛行・解析ツール"
+    "Pythonによる2次元ロケット飛行・解析シミュレーター"
 )
 
 st.markdown(
     """
-    重力・大気・空気抵抗・推力・燃料消費を考慮し、
+    重力・大気・空気抵抗・推力・燃料消費に加えて、
+    エンジン性能や推力曲線も考慮しながら、
     ロケットの飛行を時間ステップごとに計算する
     シミュレーションアプリケーションです。
     """
@@ -22,8 +23,8 @@ st.markdown(
 
 st.markdown(
     """
-    `Python`　`Streamlit`　`Plotly`　`Pandas`　
-    `Dataclass`　`Physics Simulation`
+    `Python`　`Streamlit`　`Pandas`　`Dataclass`　
+    `Canvas`　`Physics Simulation`
     """
 )
 
@@ -45,19 +46,29 @@ with overview_left:
         """
         ### このプロジェクトについて
 
-        「ロケットはどのような力を受けて飛行するのか」を、
-        物理モデルとプログラムの両面から理解するために制作しています。
+        「ロケットはどのような力を受け、
+        エンジン性能や機体状態の変化によって
+        飛行結果がどう変わるのか」を、
 
-        単純な放物運動ではなく、現在は次の要素を考慮しています。
+        物理モデルとプログラムの両面から理解するために
+        個人開発しています。
 
+        単純な放物運動ではなく、
+        現在は次の要素を考慮しています。
+
+        - 2次元飛行
         - エンジン推力
+        - 推力の時間変化
+        - 推進剤流量
+        - 比推力
+        - 推力重量比
         - 燃料消費と機体質量の変化
         - 高度に応じた重力
         - 標準大気モデル
         - 空気抵抗
         - 動圧とMax Q
         - 音速とMach数
-        - 発射から着地までのイベント
+        - 発射から着地までの飛行イベント
         """
     )
 
@@ -66,11 +77,18 @@ with overview_right:
         """
         **現在の開発段階**
 
-        基本的な2次元飛行計算と、
-        解析ダッシュボードまで実装済みです。
+        Phase 1：
+        Basic Flight Simulation ✅
 
-        今後、風・多段ロケット・機体分離・
-        比較解析などを追加予定です。
+        Phase 2：
+        Analysis Dashboard ✅
+
+        Phase 3：
+        Propulsion & Vehicle Performance 🚧
+
+        現在は推進性能モデルを高度化し、
+        点火・発射台保持・実リフトオフ判定の
+        実装を進めています。
         """
     )
 
@@ -83,7 +101,7 @@ st.divider()
 
 st.header("Current Features")
 
-column_1, column_2, column_3 = st.columns(3)
+column_1, column_2, column_3, column_4 = st.columns(4)
 
 with column_1:
     st.subheader("Flight Simulation")
@@ -99,6 +117,19 @@ with column_1:
     )
 
 with column_2:
+    st.subheader("Propulsion")
+
+    st.markdown(
+        """
+        - 推力曲線
+        - 推進剤流量
+        - 比推力
+        - 推力重量比
+        - 燃焼状態
+        """
+    )
+
+with column_3:
     st.subheader("Flight Analysis")
 
     st.markdown(
@@ -112,16 +143,60 @@ with column_2:
         """
     )
 
-with column_3:
+with column_4:
     st.subheader("Visualization")
 
     st.markdown(
         """
         - Webダッシュボード
-        - 飛行リプレイ
+        - Canvas飛行リプレイ
         - 解析グラフ
         - イベントログ
         - CSV出力
+        """
+    )
+
+st.divider()
+
+
+# ========================================
+# システムの特徴
+# ========================================
+
+st.header("Project Highlights")
+
+highlight_1, highlight_2, highlight_3 = st.columns(3)
+
+with highlight_1:
+    st.markdown(
+        """
+        ### 📐 Physics Modeling
+
+        重力・大気・抗力・推進を
+        個別の計算モデルとして実装し、
+        飛行状態へ反映しています。
+        """
+    )
+
+with highlight_2:
+    st.markdown(
+        """
+        ### 🧩 Modular Architecture
+
+        推進・物理・環境・解析・記録・表示を
+        モジュールごとに分離し、
+        機能追加しやすい構成を目指しています。
+        """
+    )
+
+with highlight_3:
+    st.markdown(
+        """
+        ### 📊 Engineering Analysis
+
+        シミュレーション結果を
+        時系列データとして保存し、
+        飛行性能・機体状態・推進性能を解析できます。
         """
     )
 
@@ -142,17 +217,17 @@ with navigation_columns[0]:
         ### 🚀 Simulation
 
         ロケット条件を入力し、
-        飛行計算と解析を実行します。
+        飛行計算・リプレイ・解析を実行します。
         """
     )
 
 with navigation_columns[1]:
     st.markdown(
         """
-        ### 📐 Physics
+        ### 📐 Physics & Models
 
-        使用している物理モデルや
-        計算の前提を説明します。
+        使用している物理式・推進モデルと
+        現在の簡略化条件を説明します。
         """
     )
 
@@ -161,7 +236,7 @@ with navigation_columns[2]:
         """
         ### 🧩 Architecture
 
-        ファイル構成やクラスの
+        クラス構成や各モジュールの
         責務分割を説明します。
         """
     )
@@ -171,13 +246,13 @@ with navigation_columns[3]:
         """
         ### 🗺️ Roadmap
 
-        今後追加する機能と
-        開発段階を整理します。
+        実装済み機能・開発中機能・
+        今後の拡張計画を整理しています。
         """
     )
 
 st.divider()
 
 st.caption(
-    "個人開発・学習・転職ポートフォリオとして開発中"
+    "個人開発・学習・転職ポートフォリオとして継続開発中"
 )
