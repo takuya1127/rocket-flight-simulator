@@ -398,11 +398,12 @@ with event_column:
 # ========================================
 
 st.header("詳細解析")
-tab_motion, tab_aero, tab_vehicle = st.tabs(
+tab_motion, tab_aero, tab_vehicle, tab_propulsion = st.tabs(
     [
         "運動解析",
         "空力・環境",
         "機体状態",
+        "推進性能",
     ]
 )
 
@@ -513,6 +514,11 @@ with tab_vehicle:
         height=320,
     )
 
+# ========================================
+# 推進性能
+# ========================================
+
+with tab_propulsion:
     st.subheader("推力")
     st.line_chart(
         flight_dataframe.set_index(
@@ -520,18 +526,6 @@ with tab_vehicle:
         )[
             [
                 "推力（N）",
-            ]
-        ],
-        height=320,
-    )
-
-    st.subheader("合成加速度")
-    st.line_chart(
-        flight_dataframe.set_index(
-            "時刻（秒）"
-        )[
-            [
-                "合成加速度（m/s²）",
             ]
         ],
         height=320,
@@ -561,6 +555,7 @@ with tab_vehicle:
         height=320,
     )
 
+    st.subheader("推力重量比")
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
