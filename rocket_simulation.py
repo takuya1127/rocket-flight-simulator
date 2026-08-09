@@ -131,6 +131,13 @@ def simulate_rocket(
             engine_result.remaining_fuel
         )
 
+        current_mass_flow_rate = (
+            engine_result.mass_flow_rate
+        )
+        current_specific_impulse = (
+            engine_result.specific_impulse
+        )
+
         # 燃焼終了を一度だけ記録する
         if (
             not engine_is_burning
@@ -281,6 +288,17 @@ def simulate_rocket(
         if current_mach > max_mach_number:
             max_mach_number = current_mach
 
+        current_weight_force = (
+            total_mass * current_gravity
+        )
+
+        if current_weight_force > 0:
+            current_thrust_to_weight_ratio = (
+                current_thrust_magnitude / current_weight_force
+            )
+        else:
+            current_thrust_to_weight_ratio = 0.0
+
         recorder.record(
             time=time,
             position_x=position_x,
@@ -296,6 +314,11 @@ def simulate_rocket(
             total_mass=total_mass,
             remaining_fuel=current_fuel,
             thrust=current_thrust_magnitude,
+            mass_flow_rate=current_mass_flow_rate,
+            specific_impulse=current_specific_impulse,
+            thrust_to_weight_ratio=(
+                current_thrust_to_weight_ratio
+            ),
         )
 
         if (

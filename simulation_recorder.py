@@ -28,6 +28,9 @@ class SimulationRecorder:
     total_masses: list[float] = field(default_factory=list)
     remaining_fuels: list[float] = field(default_factory=list)
     thrusts: list[float] = field(default_factory=list)
+    mass_flow_rates: list[float] = field(default_factory=list)
+    specific_impulses: list[float] = field(default_factory=list)
+    thrust_to_weight_ratios: list[float] = field(default_factory=list)
 
     def record(
         self,
@@ -46,6 +49,9 @@ class SimulationRecorder:
         total_mass:list[float],
         remaining_fuel:list[float],
         thrust:list[float],
+        mass_flow_rate:float,
+        specific_impulse:float,
+        thrust_to_weight_ratios:float,
     ) -> None:
         """
         現在のシミュレーション状態を保存する。
@@ -85,6 +91,9 @@ class SimulationRecorder:
         self.total_masses.append(total_mass)
         self.remaining_fuels.append(remaining_fuel)
         self.thrusts.append(thrust)
+        self.mass_flow_rates.append(mass_flow_rate)
+        self.specific_impulses.append(specific_impulse)
+        self.thrust_to_weight_ratios.append(thrust_to_weight_ratios)
 
     def to_result_kwargs(
         self,
@@ -112,4 +121,7 @@ class SimulationRecorder:
             "total_masses": self.total_masses,
             "remaining_fuels": self.remaining_fuels,
             "thrusts": self.thrusts,
+            "mass_flow_rates": self.mass_flow_rates,
+            "specific_impulses": self.specific_impulses,
+            "thrust_to_weight_ratios": self.thrust_to_weight_ratios,
         }

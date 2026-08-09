@@ -89,6 +89,9 @@ def create_flight_dataframe(
             "総質量（kg）": result.total_masses,
             "燃料残量（kg）": result.remaining_fuels,
             "推力（N）": result.thrusts,
+            "推進剤流量(kg/s)": result.mass_flow_rates,
+            "比推力(s)": result.specific_impulses,
+            "推力重量比": result.thrust_to_weight_ratios,
         }
     )
 
@@ -345,7 +348,6 @@ summary_columns[3].metric(
 # ========================================
 
 st.header("飛行概要")
-
 trajectory_column, event_column = st.columns(
     [2, 1]
 )
@@ -396,7 +398,6 @@ with event_column:
 # ========================================
 
 st.header("詳細解析")
-
 tab_motion, tab_aero, tab_vehicle = st.tabs(
     [
         "運動解析",
@@ -412,7 +413,6 @@ tab_motion, tab_aero, tab_vehicle = st.tabs(
 
 with tab_motion:
     st.subheader("高度")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
@@ -425,7 +425,6 @@ with tab_motion:
     )
 
     st.subheader("速度")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
@@ -440,7 +439,6 @@ with tab_motion:
     )
 
     st.subheader("加速度")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
@@ -461,7 +459,6 @@ with tab_motion:
 
 with tab_aero:
     st.subheader("動圧")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
@@ -474,7 +471,6 @@ with tab_aero:
     )
 
     st.subheader("マッハ数")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
@@ -487,7 +483,6 @@ with tab_aero:
     )
 
     st.subheader("重力加速度")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
@@ -506,7 +501,6 @@ with tab_aero:
 
 with tab_vehicle:
     st.subheader("燃料残量・総質量")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
@@ -520,7 +514,6 @@ with tab_vehicle:
     )
 
     st.subheader("推力")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
@@ -533,13 +526,47 @@ with tab_vehicle:
     )
 
     st.subheader("合成加速度")
-
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
         )[
             [
                 "合成加速度（m/s²）",
+            ]
+        ],
+        height=320,
+    )
+
+    st.subheader("推進剤流量")
+    st.line_chart(
+        flight_dataframe.set_index(
+            "時刻(秒)"
+        )[
+            [
+                "推進剤流量(kg/s)",
+            ]
+        ],
+        height=320,
+    )
+
+    st.subheader("比推力")
+    st.line_chart(
+        flight_dataframe.set_index(
+            "時刻(秒)"
+        )[
+            [
+                "比推力(s)",
+            ]
+        ],
+        height=320,
+    )
+
+    st.line_chart(
+        flight_dataframe.set_index(
+            "時刻(秒)"
+        )[
+            [
+                "推力重量比",
             ]
         ],
         height=320,

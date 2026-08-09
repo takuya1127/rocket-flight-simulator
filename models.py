@@ -85,6 +85,9 @@ class SimulationResult:
     total_masses: list[float]
     remaining_fuels: list[float]
     thrusts: list[float]
+    mass_flow_rates: list[float]
+    specific_impulses: list[float]
+    thrust_to_weight_ratios: list[float]
 
     # 音速を突破していない場合はNone
     sonic_boom_time: float | None
