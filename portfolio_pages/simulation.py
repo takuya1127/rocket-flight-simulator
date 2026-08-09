@@ -5,8 +5,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from dashboard_visualizer import (
-    create_flight_animation_figure,
-    create_mobile_flight_replay_html,
+    create_flight_replay_html,
 )
 
 from models import RocketConfig
@@ -354,50 +353,21 @@ trajectory_column, event_column = st.columns(
 with trajectory_column:
     st.subheader("飛行リプレイ")
 
+    # PC / スマホとも同じCanvasエンジンを使用する。
+    # Plotlyの大量フレームをブラウザへ送らないため、
+    # MessageSizeErrorと再生負荷を大幅に抑えられる。
     mobile_mode = is_mobile_device()
 
-    if mobile_mode:
-        # ----------------------------------------
-        # スマホ版
-        # Canvas + JavaScriptでブラウザ内だけで再生する。
-        # Python/Streamlitの連続再実行を行わないため軽量。
-        # ----------------------------------------
+    replay_html = create_flight_replay_html(
+        result,
+        mobile_mode=mobile_mode,
+    )
 
-        mobile_replay_html = (
-            create_mobile_flight_replay_html(
-                result
-            )
-        )
-
-        components.html(
-            mobile_replay_html,
-            height=355,
-            scrolling=False,
-        )
-
-    else:
-        # ----------------------------------------
-        # PC版
-        # 既存のPlotlyアニメーションをそのまま維持する。
-        # ----------------------------------------
-
-        flight_animation_figure = (
-            create_flight_animation_figure(
-                result,
-                mobile_mode=False,
-            )
-        )
-
-        st.plotly_chart(
-            flight_animation_figure,
-            width="stretch",
-            theme=None,
-            config={
-                "displaylogo": False,
-                "displayModeBar": False,
-                "scrollZoom": False,
-            },
-        )
+    components.html(
+        replay_html,
+        height=390 if mobile_mode else 610,
+        scrolling=False,
+    )
 
 with event_column:
     st.subheader("イベントタイムライン")
