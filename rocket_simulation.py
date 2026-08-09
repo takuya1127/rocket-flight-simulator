@@ -15,6 +15,7 @@ from gravity import GravityCalculator
 from models import RocketConfig, SimulationResult
 from physics_calculator import PhysicsCalculator
 from simulation_recorder import SimulationRecorder
+from engine import EngineCalculator
 
 
 # シミュレーションを何秒刻みで計算するか
@@ -44,7 +45,12 @@ def simulate_rocket(
     current_fuel = fuel_mass
 
     angle_radians = math.radians(launch_angle)
-    fuel_consumption_per_second = fuel_mass / burn_time
+    mass_flow_rate = (
+        EngineCalculator.calculate_mass_flow_rate(
+            fuel_mass=fuel_mass,
+            burn_time=burn_time,
+        )
+    )
 
     max_altitude = 0.0
     max_velocity = 0.0
@@ -98,33 +104,31 @@ def simulate_rocket(
         # 推力と燃料消費
         # ==========================
 
-        propulsion_result = (
-            PhysicsCalculator.calculate_propulsion(
+        engine_result = (
+            EngineCalculator.calculate(
                 time=time,
                 burn_time=burn_time,
                 thrust=thrust,
                 launch_angle_radians=angle_radians,
                 current_fuel=current_fuel,
-                fuel_consumption_per_second=(
-                    fuel_consumption_per_second
-                ),
+                mass_flow_rate=mass_flow_rate,
                 time_step=TIME_STEP,
             )
         )
 
         engine_is_burning = (
-            propulsion_result.engine_is_burning
+            engine_result.engine_is_burning
         )
 
-        thrust_x = propulsion_result.thrust_x
-        thrust_y = propulsion_result.thrust_y
+        thrust_x = engine_result.thrust_x
+        thrust_y = engine_result.thrust_y
 
         current_thrust_magnitude = (
-            propulsion_result.thrust_magnitude
+            engine_result.thrust_magnitude
         )
 
         current_fuel = (
-            propulsion_result.remaining_fuel
+            engine_result.remaining_fuel
         )
 
         # 燃焼終了を一度だけ記録する

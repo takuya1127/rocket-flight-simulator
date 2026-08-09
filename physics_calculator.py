@@ -7,28 +7,6 @@ from flight_analysis import FlightAnalyzer
 from gravity import GravityCalculator
 
 @dataclass(frozen=True)
-class PropulsionResult:
-    """
-    1ステップ分の推進系計算結果。
-
-    Attributes
-    ----------
-    engine_is_burning:エンジンが燃焼中かどうか
-    thrust_x: X方向の推力（N）
-    thrust_y: Y方向の推力（N）
-    thrust_magnitude: 現在の推力の大きさ（N）
-    remaining_fuel: 計算後の燃料残量（kg）
-    """
-
-    engine_is_burning: bool
-    thrust_x: float
-    thrust_y: float
-    thrust_magnitude: float
-
-    remaining_fuel: float
-
-
-@dataclass(frozen=True)
 class PhysicsResult:
     """
     1ステップ分の物理計算結果。
