@@ -63,6 +63,7 @@ def simulate_rocket(
     has_launched = False
     burnout_displayed = False
     apogee_displayed = False
+    ignition_displayed = False
 
     initial_total_mass = dry_mass + fuel_mass
     initial_gravity = GravityCalculator.calculate(
@@ -84,22 +85,20 @@ def simulate_rocket(
         vertical_thrust_to_weight_ratio,
     )
 
-    if vertical_thrust_to_weight_ratio > 1.0:
-        print("打ち上げ可能です。")
-        event_manager.add_event(
-            FlightEvent(
-                event_type=FlightEventType.LAUNCH,
-                time=0.0,
-                altitude=0.0,
-                description="ロケットが発射されました。",
-            )
-        )
-    else:
-        print("推力不足のため、打ち上げできません。")
-
     print()
 
     while True:
+        if not ignition_displayed:
+            event_manager.add_event(
+                FlightEvent(
+                    event_type=FlightEventType.IGNITION,
+                    time=time,
+                    altitude=0.0,
+                    description="ロケットエンジンに点火しました。",
+                )
+            )
+            ignition_displayed = True
+
         # ==========================
         # 推力と燃料消費
         # ==========================
@@ -137,6 +136,48 @@ def simulate_rocket(
         current_specific_impulse = (
             engine_result.specific_impulse
         )
+
+        current_total_mass = (
+            dry_mass + current_fuel
+        )
+
+        current_gravity_for_launch = (
+            GravityCalculator.calculate(altitude_meters=0.0)
+        )
+
+        current_weight_force = (
+            current_total_mass * current_gravity_for_launch
+        )
+
+        if current_weight_force > 0:
+            vertical_thrust_to_weight_ratio = (thrust_y / current_weight_force)
+        else:
+            vertical_thrust_to_weight_ratio = 0.0
+
+        if (
+            not has_launched and vertical_thrust_to_weight_ratio > 1.0
+        ):
+            has_launched = True
+
+            print()
+            print(
+                f"--- リフトオフ:"
+                f"{time:.1f}秒 /"
+                f"T/W={vertical_thrust_to_weight_ratio:.2f} ---"
+            )
+            print()
+
+            event_manager.add_event(
+                FlightEvent(
+                    event_type=FlightEventType.LAUNCH,
+                    time=time,
+                    altitude=0.0,
+                    description=(
+                        "推力が機体重量を上回り、"
+                        "ロケットが発射台を離れました。"
+                    ),
+                )
+            )
 
         # 燃焼終了を一度だけ記録する
         if (
@@ -203,26 +244,39 @@ def simulate_rocket(
                 speed=speed_before_update,
             )
 
-        velocity_x = (
-            velocity_x
-            + acceleration_x * TIME_STEP
-        )
-        velocity_y = (
-            velocity_y
-            + acceleration_y * TIME_STEP
-        )
+        if has_launched:
+            velocity_x = (
+                    velocity_x
+                    + acceleration_x * TIME_STEP
+            )
 
-        position_x = (
-            position_x
-            + velocity_x * TIME_STEP
-        )
-        position_y = (
-            position_y
-            + velocity_y * TIME_STEP
-        )
+            velocity_y = (
+                    velocity_y
+                    + acceleration_y * TIME_STEP
+            )
 
-        if position_y > 0:
-            has_launched = True
+            position_x = (
+                    position_x
+                    + velocity_x * TIME_STEP
+            )
+
+            position_y = (
+                    position_y
+                    + velocity_y * TIME_STEP
+            )
+
+        else:
+            # 発射台に保持されている間は移動しない
+            velocity_x = 0.0
+            velocity_y = 0.0
+
+            position_x = 0.0
+            position_y = 0.0
+
+            # 発射台から受ける反力を考え、
+            # 実際の機体加速度は0として記録する
+            acceleration_x = 0.0
+            acceleration_y = 0.0
 
         if position_y > max_altitude:
             max_altitude = position_y

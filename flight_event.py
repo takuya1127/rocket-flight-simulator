@@ -7,6 +7,7 @@ class FlightEventType(Enum):
     飛行イベントの種類。
     """
 
+    IGNITION = "Ignition"
     LAUNCH = "Launch"
     MACH_ONE = "Mach 1"
     MAX_Q = "Max Q"
