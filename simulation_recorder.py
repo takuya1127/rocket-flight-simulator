@@ -30,7 +30,7 @@ class SimulationRecorder:
     thrusts: list[float] = field(default_factory=list)
     mass_flow_rates: list[float] = field(default_factory=list)
     specific_impulses: list[float] = field(default_factory=list)
-    thrust_to_weight_ratio: list[float] = field(default_factory=list)
+    thrust_to_weight_ratios: list[float] = field(default_factory=list)
 
     def record(
         self,
