@@ -10,6 +10,8 @@ from dashboard_visualizer import (
 
 from models import RocketConfig
 from rocket_simulation import simulate_rocket
+from flight_event import FlightEventType, FlightEvent
+
 
 # ========================================
 # 補助関数
@@ -513,6 +515,87 @@ with tab_vehicle:
         ],
         height=320,
     )
+
+# ========================================
+# エンジン性能サマリー
+# ========================================
+
+st.subheader("エンジン性能サマリー")
+
+max_thrust = max(
+    result.thrusts,
+    default=0.0,
+)
+
+max_mass_flow_rate = max(
+    result.mass_flow_rates,
+    default=0.0,
+)
+
+max_specific_impulse = max(
+    result.specific_impulses,
+    default=0.0,
+)
+
+max_thrust_to_weight_ratio = max(
+    result.thrust_to_weight_ratios,
+    default=0.0,
+)
+
+#推力を時間積分して総力積を求める
+total_impulse = 0.0
+for index in range(
+    len(result.times) -1
+):
+    time_interval = (
+        result.times[index + 1] - result.times[index]
+    )
+
+    average_thrust = (
+        result.thrusts[index] + result.thrusts[index + 1]
+    ) / 2
+
+    total_impulse += (
+            average_thrust * time_interval
+    )
+
+    #Launchイベントから実際のリフトオフ時刻を取得
+    launch_event = next(
+        (
+            event
+            for event in result.flight_events
+            if event.event_type == FlightEvent.LAUNCH
+        ),
+        None,
+    )
+
+    liftoff_time = (
+        launch_event.time
+        if launch_event is not None
+        else None
+    )
+
+    performance_columns = st.columns(3)
+
+    performance_columns[0].metric(
+        label="最大推力",
+        value=f"{max_thrust:,.0f}N"
+    )
+    performance_columns[1].metric(
+        label="最大推進剤流量",
+        value="f{max_mass_flow_rate:.2f}kg/s"
+    )
+
+    performance_columns[2].metric(
+        label="リフトオフ時刻",
+        value=(
+            f"T+{liftoff_time:.1f}s"
+            if liftoff_time is not None
+            else "Not launched"
+        ),
+    )
+
+    st.divider()
 
 # ========================================
 # 推進性能
