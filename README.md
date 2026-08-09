@@ -2,14 +2,16 @@
 
 Pythonで開発している、2次元ロケット飛行シミュレーション・解析ツールです。
 
-ロケットの飛行を単純な放物運動として扱うのではなく、  
-推力・燃料消費・重力・大気・空気抵抗などを考慮しながら、
+ロケットの飛行を単純な放物運動として扱うのではなく、
+推力・推進剤消費・機体質量・重力・大気・空気抵抗などを考慮しながら、
 時間ステップごとに機体状態を計算します。
 
 計算結果はStreamlitを使用したWebダッシュボード上で、
-飛行軌跡・各種グラフ・イベント・解析値として確認できます。
+飛行軌跡・各種グラフ・飛行イベント・性能解析値として確認できます。
 
-> 🚧 **現在開発中のプロジェクトです。**  
+> 🚧 **現在開発中のプロジェクトです。**
+>
+> Phase 3まで実装済みです。
 > 今後、風モデル、多段ロケット、機体分離、比較解析、軌道飛行などを追加予定です。
 
 ---
@@ -40,11 +42,27 @@ Pythonで開発している、2次元ロケット飛行シミュレーション�
 ### 🚀 Flight Simulation
 
 - 2次元飛行シミュレーション
-- エンジン推力
-- 発射角度
-- 燃料消費
-- 機体質量の変化
+- 発射角度による推力方向の計算
+- 推進剤消費
+- 機体質量の時間変化
 - 速度・加速度・位置計算
+- 発射台保持
+- 推力重量比によるLiftoff判定
+
+### 🔥 Propulsion System
+
+エンジン性能を独立した計算モデルとして扱います。
+
+- エンジン燃焼状態
+- 推力立ち上がり
+- 定常燃焼
+- 燃焼終了前の推力減衰
+- 推進剤流量（Mass Flow Rate）
+- 比推力（Specific Impulse / Isp）
+- 推力重量比（Thrust-to-Weight Ratio）
+- 総力積（Total Impulse）
+- 推力変化に連動した推進剤消費
+- IgnitionとLiftoffの分離
 
 ### 🌍 Environment / Physics
 
@@ -66,17 +84,28 @@ Pythonで開発している、2次元ロケット飛行シミュレーション�
 - 飛行時間
 - 水平到達距離
 - Mach 1突破判定
+- 最大推力
+- 最大推進剤流量
+- 比推力
+- 最大推力重量比
+- 総力積
+- Liftoff時刻
 
 ### 🛰️ Flight Events
 
 飛行中の主要イベントを検出・記録します。
 
+- Ignition
 - Launch
 - Mach 1
 - Max Q
 - Burnout
 - Apogee
 - Landing
+
+IgnitionとLaunchは別イベントとして扱い、
+エンジン点火後に垂直方向の推力が機体重量を上回った時点で
+Liftoffと判定します。
 
 ### 🖥️ Dashboard
 
@@ -85,9 +114,13 @@ Streamlitを使用したWebダッシュボードを実装しています。
 - シミュレーション条件入力
 - 飛行サマリー
 - 飛行軌跡
-- 解析グラフ
 - Flight Replay
-- イベント表示
+- Flight Event表示
+- 運動解析
+- 空力・環境解析
+- 機体状態解析
+- 推進性能解析
+- エンジン性能サマリー
 - CSV出力
 
 ---
@@ -103,7 +136,15 @@ Rocket Configuration
 Atmosphere / Gravity
         │
         ▼
-Thrust / Drag
+Engine Model
+        │
+        ├── Thrust Curve
+        ├── Mass Flow Rate
+        ├── Specific Impulse
+        └── Fuel Consumption
+        │
+        ▼
+Thrust / Drag / Gravity
         │
         ▼
 Resultant Force
@@ -118,196 +159,7 @@ Velocity
 Position
         │
         ▼
-Flight Analysis
+Flight Analysis / Events
         │
         ▼
 Simulation Result
-```
-
-計算結果はダッシュボード、グラフ、CSVなどの
-複数の出力処理から利用できる構成にしています。
-
----
-
-## 🧩 Architecture
-
-計算・解析・記録・表示処理を分離し、
-それぞれの責務を明確にすることを意識して設計しています。
-
-```text
-RocketConfig
-    │
-    ▼
-Simulation Engine
-    │
-    ├── AtmosphereCalculator
-    ├── GravityCalculator
-    ├── PhysicsCalculator
-    ├── FlightAnalyzer
-    ├── FlightEventManager
-    └── SimulationRecorder
-    │
-    ▼
-SimulationResult
-    │
-    ├── Streamlit Dashboard
-    ├── Analysis Graphs
-    ├── Flight Replay
-    └── CSV Export
-```
-
-今後モデルが複雑になっても、
-既存コードへの影響をできるだけ小さくできる構成を目指しています。
-
----
-
-## 🛠️ Technologies
-
-- Python
-- Streamlit
-- Plotly
-- Matplotlib
-- Pandas
-- Pillow
-- Dataclasses
-- Object-Oriented Programming
-
----
-
-## 📐 Current Physics Models
-
-### Gravity
-
-高度に応じて重力加速度を変化させます。
-
-```text
-g(h) = g₀ × (R / (R + h))²
-```
-
-### Aerodynamic Drag
-
-```text
-D = 1/2 × ρ × Cd × A × v²
-```
-
-### Dynamic Pressure
-
-```text
-q = 1/2 × ρ × v²
-```
-
-大気密度と機体速度から動圧を計算し、
-飛行中に最大となるMax Qを検出します。
-
----
-
-## ⚠️ Current Limitations
-
-現在は開発途中のため、実際のロケット飛行に存在する
-すべての物理現象を再現しているわけではありません。
-
-現在、主に以下の要素を簡略化または未実装としています。
-
-- 風・突風
-- 地球の自転
-- 地球曲率を考慮した座標系
-- 揚力
-- 詳細な姿勢制御
-- エンジン推力の時間変化
-- 高度によるエンジン性能変化
-- 多段ロケット
-- ブースター・フェアリング分離
-- 軌道力学
-- 再突入時の加熱
-
-これらは今後、段階的に追加していく予定です。
-
----
-
-## 🗺️ Development Roadmap
-
-### Phase 1 — Basic Flight Simulation
-
-- [x] 2D Flight Simulation
-- [x] Gravity
-- [x] Atmosphere
-- [x] Aerodynamic Drag
-- [x] Fuel Consumption
-- [x] Mach Number
-- [x] Max Q
-- [x] Flight Events
-
-### Phase 2 — Analysis Dashboard
-
-- [x] Streamlit Dashboard
-- [x] Flight Summary
-- [x] Analysis Graphs
-- [x] CSV Export
-- [x] Flight Replay
-
-### Phase 3 — Vehicle Performance
-
-- [ ] Specific Impulse
-- [ ] Propellant Mass Flow
-- [ ] Thrust Curve
-- [ ] Engine Performance Model
-
-### Phase 4 — Wind Model
-
-- [ ] Constant Wind
-- [ ] Altitude-dependent Wind
-- [ ] Crosswind
-- [ ] Gust Model
-
-### Phase 5 — Multi-stage Rocket
-
-- [ ] Multi-stage Configuration
-- [ ] Stage Separation
-- [ ] Booster Separation
-- [ ] Fairing Separation
-
-### Phase 6 — Comparative Analysis
-
-- [ ] Multiple Simulation Comparison
-- [ ] Trajectory Comparison
-- [ ] Parameter Study
-
-### Phase 7 — Orbital Flight
-
-- [ ] Earth Curvature
-- [ ] Gravity Turn
-- [ ] Orbital Injection
-- [ ] Orbital Mechanics
-
-### Phase 8 — Visualization
-
-- [ ] Improved Flight Animation
-- [ ] Camera Tracking
-- [ ] Altitude-dependent Background
-- [ ] Improved Flame / Smoke Effects
-
----
-
-## 🚀 Run Locally
-
-### 1. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Start the Streamlit application
-
-```bash
-streamlit run streamlit_app.py
-```
-
-ブラウザでRocket Flight Simulatorが起動します。
-
----
-
-## 📌 Status
-
-**Under Development 🚧**
-
-現在も機能追加・物理モデルの改善・UI改善を継続しています。
