@@ -2,7 +2,7 @@ import math
 
 from dataclasses import dataclass
 
-from gravity import GravityCalculator
+from core.gravity import GravityCalculator
 
 
 @dataclass(frozen=True)

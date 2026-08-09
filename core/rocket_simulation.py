@@ -1,22 +1,22 @@
 import math
 
-from console_reporter import (
+from visualization.console_reporter import (
     print_simulation_result,
     print_simulation_start,
     print_status,
 )
-from flight_analysis import FlightAnalyzer
-from flight_event import (
+from analysis.flight_analysis import FlightAnalyzer
+from analysis.flight_event import (
     FlightEvent,
     FlightEventManager,
     FlightEventType,
 )
-from gravity import GravityCalculator
-from models import RocketConfig, SimulationResult
-from physics_calculator import PhysicsCalculator
-from simulation_recorder import SimulationRecorder
-from engine import EngineCalculator
+from core.gravity import GravityCalculator
+from core.physics_calculator import PhysicsCalculator
+from core.engine import EngineCalculator
 
+from models.simulation_models import RocketConfig, SimulationResult
+from recording.simulation_recorder import SimulationRecorder
 
 # シミュレーションを何秒刻みで計算するか
 TIME_STEP = 0.1

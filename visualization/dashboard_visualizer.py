@@ -8,10 +8,10 @@ from pathlib import Path
 import plotly.graph_objects as go
 from PIL import Image
 
-from models import SimulationResult
+from models.simulation_models import SimulationResult
 
-
-ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ASSET_DIRECTORY = PROJECT_ROOT / "assets"
 ROCKET_BODY_PATH = ASSET_DIRECTORY / "rocket_body.png"
 ROCKET_FLAME_PATH = ASSET_DIRECTORY / "rocket_flame.png"
 SMOKE_PATH = ASSET_DIRECTORY / "smoke.png"

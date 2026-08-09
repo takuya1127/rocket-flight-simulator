@@ -5,7 +5,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.offsetbox import AnnotationBbox, DrawingArea
 from matplotlib.patches import Circle, Polygon
 
-from models import RocketConfig, SimulationResult
+from models.simulation_models import RocketConfig, SimulationResult
 
 
 def rotate_point(

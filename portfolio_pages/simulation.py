@@ -4,13 +4,12 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from dashboard_visualizer import (
+from visualization.dashboard_visualizer import (
     create_flight_replay_html,
 )
-
-from models import RocketConfig
-from rocket_simulation import simulate_rocket
-from flight_event import FlightEventType
+from models.simulation_models import RocketConfig
+from core.rocket_simulation import simulate_rocket
+from analysis.flight_event import FlightEventType
 
 
 # ========================================

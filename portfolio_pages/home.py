@@ -16,11 +16,6 @@ st.markdown(
     """
 )
 
-
-# ========================================
-# 技術タグ
-# ========================================
-
 st.markdown(
     """
     `Python`　`Streamlit`　`Pandas`　`Dataclass`　
@@ -30,16 +25,9 @@ st.markdown(
 
 st.divider()
 
-
-# ========================================
-# プロジェクト概要
-# ========================================
-
 st.header("Project Overview")
 
-overview_left, overview_right = st.columns(
-    [3, 2]
-)
+overview_left, overview_right = st.columns([3, 2])
 
 with overview_left:
     st.markdown(
@@ -53,7 +41,6 @@ with overview_left:
         物理モデルとプログラムの両面から理解するために
         個人開発しています。
 
-        単純な放物運動ではなく、
         現在は次の要素を考慮しています。
 
         - 2次元飛行
@@ -84,20 +71,14 @@ with overview_right:
         Analysis Dashboard ✅
 
         Phase 3：
-        Propulsion & Vehicle Performance 🚧
+        Propulsion & Vehicle Performance ✅
 
-        現在は推進性能モデルを高度化し、
-        点火・発射台保持・実リフトオフ判定の
-        実装を進めています。
+        次は Phase 4：
+        Wind & Environment を開発予定です。
         """
     )
 
 st.divider()
-
-
-# ========================================
-# 現在実装済みの機能
-# ========================================
 
 st.header("Current Features")
 
@@ -105,7 +86,6 @@ column_1, column_2, column_3, column_4 = st.columns(4)
 
 with column_1:
     st.subheader("Flight Simulation")
-
     st.markdown(
         """
         - 2次元飛行
@@ -118,20 +98,18 @@ with column_1:
 
 with column_2:
     st.subheader("Propulsion")
-
     st.markdown(
         """
         - 推力曲線
         - 推進剤流量
         - 比推力
         - 推力重量比
-        - 燃焼状態
+        - Ignition / Liftoff
         """
     )
 
 with column_3:
     st.subheader("Flight Analysis")
-
     st.markdown(
         """
         - 最高高度
@@ -145,7 +123,6 @@ with column_3:
 
 with column_4:
     st.subheader("Visualization")
-
     st.markdown(
         """
         - Webダッシュボード
@@ -158,11 +135,6 @@ with column_4:
 
 st.divider()
 
-
-# ========================================
-# システムの特徴
-# ========================================
-
 st.header("Project Highlights")
 
 highlight_1, highlight_2, highlight_3 = st.columns(3)
@@ -173,8 +145,7 @@ with highlight_1:
         ### 📐 Physics Modeling
 
         重力・大気・抗力・推進を
-        個別の計算モデルとして実装し、
-        飛行状態へ反映しています。
+        個別の計算モデルとして実装しています。
         """
     )
 
@@ -184,8 +155,7 @@ with highlight_2:
         ### 🧩 Modular Architecture
 
         推進・物理・環境・解析・記録・表示を
-        モジュールごとに分離し、
-        機能追加しやすい構成を目指しています。
+        モジュールごとに分離しています。
         """
     )
 
@@ -194,62 +164,28 @@ with highlight_3:
         """
         ### 📊 Engineering Analysis
 
-        シミュレーション結果を
-        時系列データとして保存し、
-        飛行性能・機体状態・推進性能を解析できます。
+        飛行性能・機体状態・推進性能を
+        時系列データとして解析できます。
         """
     )
 
 st.divider()
-
-
-# ========================================
-# ページ案内
-# ========================================
 
 st.header("Explore the Project")
 
 navigation_columns = st.columns(4)
 
 with navigation_columns[0]:
-    st.markdown(
-        """
-        ### 🚀 Simulation
-
-        ロケット条件を入力し、
-        飛行計算・リプレイ・解析を実行します。
-        """
-    )
+    st.markdown("### 🚀 Simulation\n飛行計算・リプレイ・解析を実行します。")
 
 with navigation_columns[1]:
-    st.markdown(
-        """
-        ### 📐 Physics & Models
-
-        使用している物理式・推進モデルと
-        現在の簡略化条件を説明します。
-        """
-    )
+    st.markdown("### 📐 Physics & Models\n使用している物理モデルを説明します。")
 
 with navigation_columns[2]:
-    st.markdown(
-        """
-        ### 🧩 Architecture
-
-        クラス構成や各モジュールの
-        責務分割を説明します。
-        """
-    )
+    st.markdown("### 🧩 Architecture\nクラス構成と責務分割を説明します。")
 
 with navigation_columns[3]:
-    st.markdown(
-        """
-        ### 🗺️ Roadmap
-
-        実装済み機能・開発中機能・
-        今後の拡張計画を整理しています。
-        """
-    )
+    st.markdown("### 🗺️ Roadmap\n実装済み機能と今後の計画を整理しています。")
 
 st.divider()
 

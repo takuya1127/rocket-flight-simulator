@@ -1,9 +1,9 @@
-from data_exporter import SimulationDataExporter
-from models import RocketConfig
-from rocket_simulation import simulate_rocket
+from recording.data_exporter import SimulationDataExporter
+from models.simulation_models import RocketConfig
+from core.rocket_simulation import simulate_rocket
 from validator import InputValidator
 from visualizer import show_flight_animation, show_motion_analysis_graphs, show_vehicle_state_graphs
-from console_reporter import print_flight_events
+from visualization.console_reporter import print_flight_events
 
 
 def main() -> None:

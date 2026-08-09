@@ -1,4 +1,4 @@
-from gravity import GravityCalculator
+from core.gravity import GravityCalculator
 
 
 test_altitudes = [
