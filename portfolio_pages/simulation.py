@@ -136,6 +136,7 @@ st.caption(
 with st.sidebar:
     st.header("ロケット設定")
 
+    st.markdown("### 🚀 機体設定")
     structure_mass = st.number_input(
         "機体構造質量(kg)",
         min_value=0.1,
@@ -173,8 +174,9 @@ with st.sidebar:
     )
 
     st.caption(f"乾燥質量:{dry_mass:.1f}kg")
-    st.caption(f"初期喪失量:{initial_total_mass:.1f}kg")
+    st.caption(f"初期総質量:{initial_total_mass:.1f}kg")
 
+    st.markdown("### 🔥 エンジン設定")
     thrust = st.number_input(
         "エンジン推力（N）",
         min_value=0.1,
@@ -197,6 +199,7 @@ with st.sidebar:
         step=1.0,
     )
 
+    st.markdown("### 🌍 空力設定")
     drag_coefficient = st.number_input(
         "抗力係数",
         min_value=0.01,
@@ -211,6 +214,51 @@ with st.sidebar:
         step=0.01,
         format="%.3f",
     )
+
+    st.markdown("### 🌬️ 風設定")
+    wind_speed = st.number_input(
+        "風速（m/s）",
+        min_value=0.0,
+        max_value=100.0,
+        value=5.0,
+        step=1.0,
+    )
+
+    wind_direction_deg = st.slider(
+        "風向（度）",
+        min_value=0,
+        max_value=359,
+        value=0,
+        step=1,
+    )
+
+    with st.expander(
+        "⚙️ 詳細設定",
+        expanded=False,
+    ):
+        gust_speed = st.number_input(
+            "突風追加風速（m/s）",
+            min_value=0.0,
+            max_value=100.0,
+            value=0.0,
+            step=1.0,
+        )
+
+        gust_start_time = st.number_input(
+            "突風開始時刻（秒）",
+            min_value=0.0,
+            max_value=300.0,
+            value=15.0,
+            step=1.0,
+        )
+
+        gust_duration = st.number_input(
+            "突風継続時間（秒）",
+            min_value=0.0,
+            max_value=60.0,
+            value=5.0,
+            step=1.0,
+        )
 
     run_simulation = st.button(
         "シミュレーション実行",
@@ -234,6 +282,11 @@ if run_simulation:
         launch_angle=launch_angle,
         drag_coefficient=drag_coefficient,
         reference_area=reference_area,
+        wind_speed=wind_speed,
+        wind_direction_deg=wind_direction_deg,
+        gust_speed=gust_speed,
+        gust_start_time=gust_start_time,
+        gust_duration=gust_duration,
     )
 
     with st.spinner(

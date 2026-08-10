@@ -32,8 +32,6 @@ class PhysicsResult:
     speed_of_sound: float
     drag_force_x: float
     drag_force_y: float
-    drag_force_x: float
-    drag_force_y: float
     acceleration_x: float
     acceleration_y: float
 
@@ -52,74 +50,6 @@ class PhysicsCalculator:
     """
 
     @staticmethod
-    def calculate_propulsion(
-            *,
-            time: float,
-            burn_time: float,
-            thrust: float,
-            launch_angle_radians: float,
-            current_fuel: float,
-            fuel_consumption_per_second: float,
-            time_step: float,
-    ) -> PropulsionResult:
-        """
-        エンジンの燃焼状態・推力・燃料残量を計算する。
-
-        Parameters
-        ----------
-        time: 現在時刻（秒）
-        burn_time: エンジンの燃焼時間（秒）
-        thrust: エンジン推力（N）
-        launch_angle_radians: 発射角度（ラジアン）
-        current_fuel: 現在の燃料残量（kg）
-        fuel_consumption_per_second: 1秒あたりの燃料消費量（kg/s）
-        time_step: シミュレーションの時間刻み（秒）
-
-        Returns
-        -------
-        PropulsionResult: 推力と燃料に関する計算結果
-        """
-
-        engine_is_burning = (
-            time < burn_time
-            and current_fuel > 0
-        )
-        if not engine_is_burning:
-            return PropulsionResult(
-                engine_is_burning=False,
-                thrust_x=0.0,
-                thrust_y=0.0,
-                thrust_magnitude=0.0,
-                remaining_fuel=current_fuel,
-            )
-
-        thrust_x = (
-            thrust * math.cos(launch_angle_radians)
-        )
-        thrust_y = (
-            thrust * math.sin(launch_angle_radians)
-        )
-        consumed_fuel = (
-            fuel_consumption_per_second * time_step
-        )
-        remaining_fuel = max(
-            0.0,
-            current_fuel - consumed_fuel,
-        )
-        thrust_magnitude = math.hypot(
-            thrust_x,
-            thrust_y,
-        )
-
-        return PropulsionResult(
-            engine_is_burning=True,
-            thrust_x=thrust_x,
-            thrust_y=thrust_y,
-            thrust_magnitude=thrust_magnitude,
-            remaining_fuel=remaining_fuel,
-        )
-
-    @staticmethod
     def calculate(
         *,
         dry_mass: float,
@@ -127,6 +57,8 @@ class PhysicsCalculator:
         position_y: float,
         velocity_x: float,
         velocity_y: float,
+        wind_x: float,
+        wind_y: float,
         thrust_x: float,
         thrust_y: float,
         drag_coefficient: float,
@@ -142,6 +74,8 @@ class PhysicsCalculator:
         position_y: 現在高度（m）
         velocity_x: 現在のX方向速度（m/s）
         velocity_y: 現在のY方向速度（m/s）
+        wind_x: X方向の風速（m/s）
+        wind_y: Y方向の風速（m/s）
         thrust_x: X方向の推力（N）
         thrust_y: Y方向の推力（N）
         drag_coefficient: 抗力係数
@@ -177,16 +111,21 @@ class PhysicsCalculator:
         air_density = atmosphere.density
 
         # X・Y方向を合わせた現在速度
-        speed = math.hypot(
-            velocity_x,
-            velocity_y,
+        relative_velocity_x= (
+            velocity_x - wind_x
         )
+
+        relative_velocity_y= (
+            velocity_y - wind_y
+        )
+
+        relative_speed = math.hypot(relative_velocity_x, relative_velocity_y)
 
         # 現在の動圧
         dynamic_pressure = (
             FlightAnalyzer.calculate_dynamic_pressure(
                 air_density=air_density,
-                speed=speed,
+                speed=relative_speed,
             )
         )
 
@@ -194,8 +133,8 @@ class PhysicsCalculator:
         drag_force_x = 0.0
         drag_force_y = 0.0
 
-        # 停止中は空気抵抗が発生しない
-        if speed > 0:
+        # 相対風速がある場合のみ空気抵抗を計算する
+        if relative_speed > 0:
             # 空気抵抗の大きさ
             drag_force = (
                 dynamic_pressure
@@ -206,14 +145,14 @@ class PhysicsCalculator:
             # 空気抵抗は進行方向と反対向き
             drag_force_x = (
                 -drag_force
-                * velocity_x
-                / speed
+                * relative_velocity_x
+                / relative_speed
             )
 
             drag_force_y = (
                 -drag_force
-                * velocity_y
-                / speed
+                * relative_velocity_y
+                / relative_speed
             )
 
         # X方向の合力
@@ -245,7 +184,7 @@ class PhysicsCalculator:
             total_mass=total_mass,
             gravity=gravity,
             air_density=air_density,
-            speed=speed,
+            speed=relative_speed,
             dynamic_pressure=dynamic_pressure,
             drag_force_x=drag_force_x,
             drag_force_y=drag_force_y,

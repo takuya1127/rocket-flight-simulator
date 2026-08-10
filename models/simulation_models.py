@@ -22,10 +22,17 @@ class RocketConfig:
     burn_time: float
     #発射角度(度)
     launch_angle: float
+    #風設定
+    wind_speed: float
+    wind_direction_deg: float
+    gust_speed: float
+    gust_start_time: float
+    gust_duration: float
     #空気抵抗係数 小さいほど空気抵抗を受けにくい
     drag_coefficient: float = 0.5
     #空気を正面から受ける面積(m²)
     reference_area: float = 0.1
+
 
     @property
     def dry_mass(self) -> float:

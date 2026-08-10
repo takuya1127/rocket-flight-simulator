@@ -2,8 +2,8 @@
 
 Pythonで開発している、**2次元ロケット飛行シミュレーション・解析ツール**です。
 
-ロケットの飛行を単純な放物運動として扱うのではなく、  
-推力・推進剤消費・機体質量・重力・大気・空気抵抗などを考慮しながら、
+ロケットの飛行を単純な放物運動として扱うのではなく、
+推力・推進剤消費・機体質量・重力・大気・空気抵抗・風などを考慮しながら、
 時間ステップごとに機体状態を計算します。
 
 計算結果はStreamlitを使用したWebダッシュボード上で、
@@ -11,8 +11,8 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 
 > 🚧 **現在開発中のプロジェクトです。**
 >
-> Phase 3「推進・機体性能」まで実装済みです。  
-> 今後は風モデル、多段ロケット、比較解析、軌道飛行などへ拡張予定です。
+> Phase 4「Wind & Environment」まで実装済みです。  
+> 次はPhase 5「Multi-stage Rocket」の実装を予定しています。
 
 ---
 
@@ -69,6 +69,8 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 - Total Impulse
 - Ignition Detection
 - Burnout Detection
+- Launch Pad Hold
+- Liftoff Detection
 
 ### Thrust Curve
 
@@ -94,6 +96,37 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 - 空気抵抗
 - 動圧（Dynamic Pressure）
 - Mach数
+- 一定風
+- 高度依存風
+- 2次元モデル上の横風
+- 指定時間だけ発生する突風
+- 相対風速を用いた空気抵抗計算
+
+### Wind Model
+
+風は速度と方向からX / Y成分へ分解し、
+ロケットの地上速度との差から対気速度を計算します。
+
+```text
+Relative Air Velocity
+    = Rocket Velocity - Wind Velocity
+```
+
+空気抵抗・動圧・Mach数は、
+機体の地上速度ではなく**大気に対する相対速度**を基準として計算します。
+
+現在の風モデルでは、
+
+- 基準風速
+- 風向
+- 高度に応じた風速変化
+- 突風追加風速
+- 突風開始時刻
+- 突風継続時間
+
+を設定できます。
+
+突風などの追加項目はStreamlitの **⚙️ 詳細設定** にまとめています。
 
 ---
 
@@ -141,6 +174,8 @@ Streamlitを使用したWebダッシュボードを実装しています。
 ### Simulation
 
 - ロケット条件入力
+- 機体・エンジン・空力・風のカテゴリ別設定
+- 詳細設定
 - シミュレーション実行
 - 飛行サマリー
 - 飛行軌跡
@@ -166,9 +201,6 @@ Streamlitを使用したWebダッシュボードを実装しています。
 
 # 🧮 Simulation Flow
 
-シミュレーションでは、一定の時間ステップごとに
-ロケットの状態を更新します。
-
 ```text
 Rocket Configuration
         │
@@ -176,7 +208,13 @@ Rocket Configuration
 Atmosphere / Gravity
         │
         ▼
+Wind Model
+        │
+        ▼
 Engine / Thrust
+        │
+        ▼
+Relative Air Velocity
         │
         ▼
 Aerodynamic Drag
@@ -203,15 +241,9 @@ Flight Analysis / Events
 Simulation Result
 ```
 
-計算結果を直接UIへ依存させず、
-記録・解析したデータを複数の出力処理から利用できる構成を目指しています。
-
 ---
 
 # 🧩 Architecture
-
-プロジェクトの規模拡大に合わせて、
-計算・解析・記録・表示などの責務を分離しています。
 
 ```text
 Rocket Flight Simulator
@@ -221,7 +253,8 @@ Rocket Flight Simulator
 │   ├── engine.py
 │   ├── gravity.py
 │   ├── physics_calculator.py
-│   └── rocket_simulation.py
+│   ├── rocket_simulation.py
+│   └── wind.py
 │
 ├── models/
 │   └── simulation_models.py
@@ -246,27 +279,9 @@ Rocket Flight Simulator
 │   └── roadmap.py
 │
 ├── assets/
-│
 ├── tests/
-│
 └── streamlit_app.py
 ```
-
-各ディレクトリは以下の責務を持ちます。
-
-| Directory | Responsibility |
-|---|---|
-| `core` | シミュレーション・物理計算 |
-| `models` | シミュレーションで使用するデータモデル |
-| `analysis` | 飛行結果・イベント解析 |
-| `recording` | 状態記録・データ出力 |
-| `visualization` | グラフ・リプレイなどの可視化 |
-| `portfolio_pages` | Streamlitの各ページ |
-| `assets` | ロケット・炎・煙・雲などの画像 |
-| `tests` | テストコード |
-
-この構成により、今後モデルが複雑になっても、
-既存コードへの影響をできるだけ小さくしながら機能追加できる設計を目指しています。
 
 ---
 
@@ -274,43 +289,24 @@ Rocket Flight Simulator
 
 ## Gravity
 
-高度に応じて重力加速度を変化させます。
-
 ```text
 g(h) = g₀ × (R / (R + h))²
 ```
 
-- `g₀` : 地表付近の重力加速度
-- `R` : 地球半径
-- `h` : 高度
-
----
-
 ## Aerodynamic Drag
 
-空気抵抗は以下の式を基礎として計算します。
-
 ```text
-D = 1/2 × ρ × Cd × A × v²
+D = 1/2 × ρ × Cd × A × Vrel²
 ```
 
-- `ρ` : 空気密度
-- `Cd` : 抗力係数
-- `A` : 基準面積
-- `v` : 機体速度
-
----
+風モデル導入後は、機体の地上速度ではなく
+**相対風速と反対方向に空気抵抗が作用する**ようにしています。
 
 ## Dynamic Pressure
 
 ```text
-q = 1/2 × ρ × v²
+q = 1/2 × ρ × Vrel²
 ```
-
-大気密度と機体速度から動圧を計算し、
-飛行中に最大となる地点を **Max Q** として検出します。
-
----
 
 ## Specific Impulse
 
@@ -318,36 +314,17 @@ q = 1/2 × ρ × v²
 Isp = F / (ṁ × g₀)
 ```
 
-- `F` : 推力
-- `ṁ` : 推進剤質量流量
-- `g₀` : 標準重力加速度
-
-エンジンが単位推進剤重量あたり、
-どれだけ長く推力を発生できるかを表す指標として使用します。
-
----
-
 ## Thrust-to-Weight Ratio
 
 ```text
 TWR = F / (m × g)
 ```
 
-推力と機体重量の比率を計算します。
-
-`TWR > 1` となり、その他の条件を満たした場合に
-機体が発射台から離れる判定へ利用します。
-
----
-
 ## Total Impulse
 
 ```text
 I = ∫ F(t) dt
 ```
-
-時間変化する推力を飛行データから積算し、
-エンジンが燃焼中に発生した総力積を求めます。
 
 ---
 
@@ -367,203 +344,87 @@ I = ∫ F(t) dt
 
 # ⚠️ Current Limitations
 
-現在は開発途中のため、
-実際のロケット飛行に存在するすべての物理現象を
-再現しているわけではありません。
-
-現在、主に以下の要素を簡略化または未実装としています。
-
-- 風・突風
+- 実観測の風データ連携
+- 3次元方向の風
+- ランダム・確率的な乱気流
 - 地球の自転
 - 地球曲率を考慮した座標系
 - 揚力
 - 詳細な姿勢制御
-- 高度による詳細なエンジン性能変化
+- 高度・大気圧による詳細なエンジン性能変化
 - 多段ロケット
 - ブースター分離
 - フェアリング分離
 - 軌道力学
 - 再突入時の加熱
 
-今後のPhaseで段階的に追加していく予定です。
-
 ---
 
 # 🗺️ Development Roadmap
 
 ## ✅ Phase 1 — Basic Flight Simulation
-
-- 2D Flight Simulation
-- Gravity
-- Atmosphere
-- Aerodynamic Drag
-- Fuel Consumption
-- Mach Number
-- Max Q
-- Flight Events
-
 **Status: Completed**
-
----
 
 ## ✅ Phase 2 — Analysis Dashboard
-
-- Streamlit Dashboard
-- Flight Summary
-- Analysis Graphs
-- CSV Export
-- Flight Replay
-- Detailed Analysis
-
 **Status: Completed**
-
----
 
 ## ✅ Phase 3 — Propulsion & Vehicle Performance
-
-- Engine Performance Model
-- Thrust Curve
-- Propellant Mass Flow
-- Specific Impulse
-- Thrust-to-Weight Ratio
-- Total Impulse
-- Ignition Event
-- Launch Pad Hold
-- Liftoff Detection
-- Engine Performance Summary
-
 **Status: Completed**
 
----
-
-## 🚧 Phase 4 — Wind Model
+## ✅ Phase 4 — Wind & Environment
 
 - Constant Wind
+- Wind Direction
 - Altitude-dependent Wind
-- Crosswind
+- 2D Crosswind
 - Gust Model
 - Relative Airspeed
 - Wind Effects on Aerodynamic Drag
+- Wind / Gust UI Settings
+- Advanced Settings UI
+- Wind Model Behavior Validation
 
-**Status: Next**
+**Status: Completed**
 
----
-
-## Phase 5 — Multi-stage Rocket
+## 🚧 Phase 5 — Multi-stage Rocket
 
 - Multi-stage Configuration
-- Stage-specific Parameters
+- Stage-specific Mass / Fuel / Engine
 - Stage Separation
 - Booster Separation
 - Fairing Separation
 - Mass Change after Separation
+- Separation Events
 
----
+**Status: Next**
 
-## Phase 6 — Comparative Analysis
-
-- Multiple Simulation Comparison
-- Trajectory Comparison
-- Performance Comparison
-- Parameter Study
-- Simulation History
-
----
-
-## Phase 7 — Orbital Flight
-
-- Earth Curvature
-- Gravity Turn
-- Orbital Injection
-- Orbital Velocity
-- Orbital Mechanics
-
----
-
-## Phase 8 — Visualization
-
-- Improved Flight Animation
-- Camera Tracking
-- Altitude-dependent Background
-- Improved Flame / Smoke Effects
-- Additional Flight Visualization
+## Phase 6 — Guidance & Flight Control
+## Phase 7 — Comparative Analysis
+## Phase 8 — Orbital Flight
+## Phase 9 — Visualization & Presentation
+## Phase 10 — Validation & Engineering Quality
 
 ---
 
 # 🚀 Run Locally
 
-## 1. Clone repository
-
-```bash
-git clone <repository-url>
-cd rocket-flight-simulator
-```
-
-## 2. Create virtual environment
-
-Windows:
-
 ```powershell
 python -m venv .venv
-```
-
-## 3. Activate virtual environment
-
-PowerShell:
-
-```powershell
 .\.venv\Scripts\Activate.ps1
-```
-
-## 4. Install dependencies
-
-```powershell
 python -m pip install -r requirements.txt
-```
-
-## 5. Start application
-
-```powershell
 python -m streamlit run streamlit_app.py
 ```
-
-ブラウザでRocket Flight Simulatorが起動します。
 
 ---
 
 # 📌 Project Status
 
-**Phase 3 Completed ✅**
+**Phase 4 Completed ✅**
 
 現在は、
 
-**Basic Flight Simulation → Analysis Dashboard → Propulsion / Vehicle Performance**
+**Basic Flight Simulation → Analysis Dashboard → Propulsion / Vehicle Performance → Wind & Environment**
 
 まで実装しています。
 
-次のPhaseでは**風モデル（Wind Model）**を導入し、
-
-```text
-Ground Velocity
-        +
-Wind Velocity
-        ↓
-Relative Air Velocity
-        ↓
-Aerodynamic Drag
-        ↓
-Rocket Motion
-```
-
-という形で、機体速度だけではなく
-**大気に対する相対速度を使用した空力計算**へ拡張していく予定です。
-
----
-
-## 🚀 Future Goal
-
-最終的には、
-
-**機体設定 → エンジン → 大気 → 飛行 → 多段化 → 軌道投入 → 解析**
-
-まで扱えるロケット飛行シミュレーターへの発展を目指します。
+次のPhaseでは、**多段ロケット（Multi-stage Rocket）**へ進みます。

@@ -14,6 +14,7 @@ from analysis.flight_event import (
 from core.gravity import GravityCalculator
 from core.physics_calculator import PhysicsCalculator
 from core.engine import EngineCalculator
+from core.wind import WindCalculator
 
 from models.simulation_models import RocketConfig, SimulationResult
 from recording.simulation_recorder import SimulationRecorder
@@ -119,6 +120,25 @@ def simulate_rocket(
             engine_result.engine_is_burning
         )
 
+        # ========================================
+        # 風
+        # ========================================
+
+        wind_direction_radians = math.radians(
+            config.wind_direction_deg
+        )
+        wind_result = (
+            WindCalculator.calculate_altitude_wind(
+                time=time,
+                altitude=position_y,
+                base_wind_speed=config.wind_speed,
+                wind_direction_radians=wind_direction_radians,
+                gust_speed=config.gust_speed,
+                gust_start_time=config.gust_start_time,
+                gust_duration=config.gust_duration,
+            )
+        )
+
         thrust_x = engine_result.thrust_x
         thrust_y = engine_result.thrust_y
 
@@ -222,6 +242,8 @@ def simulate_rocket(
             position_y=position_y,
             velocity_x=velocity_x,
             velocity_y=velocity_y,
+            wind_x=wind_result.wind_x,
+            wind_y=wind_result.wind_y,
             thrust_x=thrust_x,
             thrust_y=thrust_y,
             drag_coefficient=drag_coefficient,
