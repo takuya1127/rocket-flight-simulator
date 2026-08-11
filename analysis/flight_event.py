@@ -14,6 +14,9 @@ class FlightEventType(Enum):
     BURNOUT = "Burnout"
     APOGEE = "Apogee"
     LANDING = "Landing"
+    STAGE_SEPARATION = "Stage Separation"
+    FAIRING_SEPARATION = "Fairing Separation"
+    BOOSTER_SEPARATION ="Booster Separation"
 
 
 @dataclass(frozen=True)

@@ -73,8 +73,11 @@ with overview_right:
         Phase 3：
         Propulsion & Vehicle Performance ✅
 
-        次は Phase 4：
-        Wind & Environment を開発予定です。
+        Phase 4：
+        Wind & Environment ✅ 
+        
+        現在はPhase 5:
+        Multi-stage Rocket　を開発中です。
         """
     )
 
@@ -190,5 +193,5 @@ with navigation_columns[3]:
 st.divider()
 
 st.caption(
-    "個人開発・学習・転職ポートフォリオとして継続開発中"
+    "個人開発・学習用として継続開発中"
 )
