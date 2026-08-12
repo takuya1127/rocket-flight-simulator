@@ -86,8 +86,8 @@ with st.expander("✅ Phase 5 — Multi-stage Rocket", expanded=True):
 with st.expander("🚧 Phase 6 — Guidance & Flight Control"):
     st.markdown(
         """
-        - ⬜ 時間による姿勢変更
-        - ⬜ ピッチプログラム
+        - ✅ 時間による姿勢変更
+        - ✅ ピッチプログラム
         - ⬜ 重力ターン
         - ⬜ 推力方向の動的変更
         - ⬜ 簡易姿勢制御

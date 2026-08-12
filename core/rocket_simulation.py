@@ -16,6 +16,7 @@ from core.physics_calculator import PhysicsCalculator
 from core.engine import EngineCalculator
 from core.wind import WindCalculator
 from core.stage_manager import StageManager
+from core.guidance import GuidanceController
 
 from models.simulation_models import RocketConfig, SimulationResult
 from recording.simulation_recorder import SimulationRecorder
@@ -32,6 +33,7 @@ def simulate_rocket(
     """
 
     launch_angle = config.launch_angle
+    pitch_angle = launch_angle
     drag_coefficient = config.drag_coefficient
     reference_area = config.reference_area
 
@@ -178,6 +180,16 @@ def simulate_rocket(
                 )
             )
             ignition_displayed = True
+
+        guidance_result = (
+            GuidanceController.calculate_pitch_angle(
+                time=time,
+                initial_pitch_angle=launch_angle,
+            )
+        )
+
+        pitch_angle = guidance_result.pitch_angle
+        angle_radians = math.radians(pitch_angle)
 
         # ==========================
         # 推力と燃料消費
@@ -786,6 +798,7 @@ def simulate_rocket(
             acceleration_x=acceleration_x,
             acceleration_y=acceleration_y,
             flight_angle=flight_angle,
+            pitch_angle=pitch_angle,
             dynamic_pressure=dynamic_pressure,
             mach_number=current_mach,
             gravity=current_gravity,
