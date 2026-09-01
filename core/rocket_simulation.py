@@ -170,6 +170,10 @@ def simulate_rocket(
     print()
 
     while True:
+        # ========================================
+        # 初回点火イベント
+        # ========================================
+
         if not ignition_displayed:
             event_manager.add_event(
                 FlightEvent(
@@ -181,22 +185,30 @@ def simulate_rocket(
             )
             ignition_displayed = True
 
-        guidance_result = (
-            GuidanceController.calculate_pitch_angle(
-                time=time,
-                initial_pitch_angle=launch_angle,
+        # ========================================
+        # 現在の飛行角度
+        # ========================================
+
+        current_flight_angle = math.degrees(
+            math.atan2(
+                velocity_y,
+                velocity_x,
             )
         )
 
-        pitch_angle = guidance_result.pitch_angle
-        angle_radians = math.radians(pitch_angle)
+        # このステップで実際に推力計算へ使う姿勢角。
+        # Guidanceで求めた新しい姿勢角は次ステップから使用する。
+        applied_pitch_angle = pitch_angle
+        angle_radians = math.radians(
+            applied_pitch_angle
+        )
 
-        # ==========================
+        # ========================================
         # 推力と燃料消費
-        # ==========================
+        # ========================================
 
         engine_time = (
-            time - stage_start_time
+                time - stage_start_time
         )
 
         engine_result = (
@@ -212,8 +224,13 @@ def simulate_rocket(
         )
 
         booster_result = None
-        if(booster_attached and not booster_separated and config.booster is not None):
-            booster_result =(
+
+        if (
+                booster_attached
+                and not booster_separated
+                and config.booster is not None
+        ):
+            booster_result = (
                 EngineCalculator.calculate(
                     time=time,
                     burn_time=config.booster.burn_time,
@@ -227,6 +244,25 @@ def simulate_rocket(
 
         engine_is_burning = (
             engine_result.engine_is_burning
+        )
+
+        # ========================================
+        # Guidance / Flight Control
+        # ========================================
+
+        guidance_result = (
+            GuidanceController.calculate_pitch_angle(
+                time=time,
+                initial_pitch_angle=launch_angle,
+                flight_angle=current_flight_angle,
+                previous_pitch_angle=applied_pitch_angle,
+                has_launched=has_launched,
+                engine_is_burning=engine_is_burning,
+            )
+        )
+
+        next_pitch_angle = (
+            guidance_result.pitch_angle
         )
 
         # ========================================
@@ -288,7 +324,7 @@ def simulate_rocket(
         )
 
         current_total_mass = (
-            dry_mass + total_remaining_fuel
+                dry_mass + total_remaining_fuel
         )
 
         current_gravity_for_launch = (
@@ -296,7 +332,7 @@ def simulate_rocket(
         )
 
         current_weight_force = (
-            current_total_mass * current_gravity_for_launch
+                current_total_mass * current_gravity_for_launch
         )
 
         if current_weight_force > 0:
@@ -305,7 +341,7 @@ def simulate_rocket(
             vertical_thrust_to_weight_ratio = 0.0
 
         if (
-            not has_launched and vertical_thrust_to_weight_ratio > 1.0
+                not has_launched and vertical_thrust_to_weight_ratio > 1.0
         ):
             has_launched = True
 
@@ -442,9 +478,9 @@ def simulate_rocket(
                         )
 
                         if (
-                            booster_attached
-                            and not booster_separated
-                            and config.booster is not None
+                                booster_attached
+                                and not booster_separated
+                                and config.booster is not None
                         ):
                             dry_mass += (
                                 config.booster.total_dry_mass
@@ -626,12 +662,12 @@ def simulate_rocket(
         # ========================================
         # ブースター分離
         # ========================================
-        if(
-            booster_attached
-            and not booster_separated
-            and config.booster is not None
-            and booster_result is not None
-            and not booster_result.engine_is_burning
+        if (
+                booster_attached
+                and not booster_separated
+                and config.booster is not None
+                and booster_result is not None
+                and not booster_result.engine_is_burning
         ):
             booster_separated = True
             booster_attached = False
@@ -642,7 +678,7 @@ def simulate_rocket(
                 0.0, dry_mass - booster_dry_mass,
             )
 
-            #ブースターに残った燃料も機体から離れる
+            # ブースターに残った燃料も機体から離れる
             booster_fuel_mass = 0.0
 
             print()
@@ -673,7 +709,7 @@ def simulate_rocket(
         # ========================================
         # フェアリング分離
         # ========================================
-        if(
+        if (
             has_launched
             and not fairing_separated
             and config.fairing_mass > 0.0
@@ -779,12 +815,12 @@ def simulate_rocket(
             max_mach_number = current_mach
 
         current_weight_force = (
-            total_mass * current_gravity
+                total_mass * current_gravity
         )
 
         if current_weight_force > 0:
             current_thrust_to_weight_ratio = (
-                current_thrust_magnitude / current_weight_force
+                    current_thrust_magnitude / current_weight_force
             )
         else:
             current_thrust_to_weight_ratio = 0.0
@@ -798,7 +834,7 @@ def simulate_rocket(
             acceleration_x=acceleration_x,
             acceleration_y=acceleration_y,
             flight_angle=flight_angle,
-            pitch_angle=pitch_angle,
+            pitch_angle=applied_pitch_angle,
             dynamic_pressure=dynamic_pressure,
             mach_number=current_mach,
             gravity=current_gravity,
@@ -813,9 +849,9 @@ def simulate_rocket(
         )
 
         if (
-            has_launched
-            and velocity_y <= 0
-            and not apogee_displayed
+                has_launched
+                and velocity_y <= 0
+                and not apogee_displayed
         ):
             print()
             print(
@@ -896,6 +932,9 @@ def simulate_rocket(
             )
             return None
 
+        # 次ステップで使用する姿勢角へ更新
+        pitch_angle = next_pitch_angle
+
         time = time + TIME_STEP
 
     max_q_record = flight_analyzer.get_max_q_record()
@@ -905,8 +944,8 @@ def simulate_rocket(
 
     if max_q_record.dynamic_pressure > 0:
         max_q_kpa = (
-            max_q_record.dynamic_pressure
-            / 1000
+                max_q_record.dynamic_pressure
+                / 1000
         )
 
         event_manager.add_event(

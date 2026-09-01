@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import time
 
 
 @dataclass(frozen=True)
@@ -10,50 +9,122 @@ class GuidanceResult:
 
     pitch_angle: float
 
+
 class GuidanceController:
     """
     ロケットの姿勢角を計算するクラス。
 
     Phase 6では、
-    時間に応じてピッチ角を変化させる
-    簡易Pitch Programから実装する。
+    ・初期姿勢維持
+    ・Pitch Program
+    ・簡易Gravity Turn
+    を担当する。
     """
 
     @staticmethod
     def calculate_pitch_angle(
-            *,
-            time: float,
-            initial_pitch_angle: float,
+        *,
+        time: float,
+        initial_pitch_angle: float,
+        flight_angle: float,
+        previous_pitch_angle: float,
+        has_launched: bool,
+        engine_is_burning: bool,
     ) -> GuidanceResult:
         """
-            ロケットの姿勢角を計算するクラス。
-            現段階では簡易Pitch Programとして、
+        現在の飛行状態から姿勢角を計算する。
+        """
 
-            0〜5秒:初期姿勢を維持
-            5〜25秒:徐々に水平方向へ傾ける
-            25秒以降:45度を維持
+        # ========================================
+        # 発射前
+        # ========================================
 
-            とする。
-            """
+        if not has_launched:
+            return GuidanceResult(
+                pitch_angle=initial_pitch_angle,
+            )
+
+        # ========================================
+        # 初期上昇
+        # 0～5秒
+        # ========================================
 
         if time < 5.0:
-            pitch_angle = initial_pitch_angle
+            return GuidanceResult(
+                pitch_angle=initial_pitch_angle,
+            )
 
-        elif time < 25.0:
-            progress = (time - 5.0) / 20.0
+        # ========================================
+        # Pitch Program
+        # 5～15秒
+        # ========================================
 
-            target_pitch_angle = 45.0
+        if time < 15.0:
+            progress = (
+                (time - 5.0)
+                / 10.0
+            )
+
+            target_pitch_angle = 65.0
 
             pitch_angle = (
                 initial_pitch_angle
                 + (
-                target_pitch_angle - initial_pitch_angle
+                    target_pitch_angle
+                    - initial_pitch_angle
                 )
                 * progress
             )
 
-        else:
-            pitch_angle = 45.0
+            return GuidanceResult(
+                pitch_angle=pitch_angle,
+            )
+
+        # ========================================
+        # エンジン停止後
+        # ========================================
+
+        if not engine_is_burning:
+            # 燃焼終了後は誘導による姿勢変更を行わない
+            return GuidanceResult(
+                pitch_angle=previous_pitch_angle,
+            )
+
+        # ========================================
+        # Gravity Turn
+        # ========================================
+
+        # 上昇中のGravity Turnでは、
+        # 0～90度の範囲だけを目標とする。
+        target_pitch_angle = max(
+            0.0,
+            min(
+                90.0,
+                flight_angle,
+            ),
+        )
+
+        # 一気に飛行角へ合わせず、
+        # 少しずつ追従させる。
+        response_rate = 0.02
+
+        pitch_angle = (
+            previous_pitch_angle
+            + (
+                target_pitch_angle
+                - previous_pitch_angle
+            )
+            * response_rate
+        )
+
+        # 数値誤差などで範囲外へ出ないようにする
+        pitch_angle = max(
+            0.0,
+            min(
+                90.0,
+                pitch_angle,
+            ),
+        )
 
         return GuidanceResult(
             pitch_angle=pitch_angle,
