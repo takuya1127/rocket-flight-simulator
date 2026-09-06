@@ -8,7 +8,7 @@ class GuidanceResult:
     """
 
     pitch_angle: float
-
+    target_pitch_angle: float
 
 class GuidanceController:
     """
@@ -30,6 +30,7 @@ class GuidanceController:
         previous_pitch_angle: float,
         has_launched: bool,
         engine_is_burning: bool,
+        time_step: float,
     ) -> GuidanceResult:
         """
         現在の飛行状態から姿勢角を計算する。
@@ -42,6 +43,7 @@ class GuidanceController:
         if not has_launched:
             return GuidanceResult(
                 pitch_angle=initial_pitch_angle,
+                target_pitch_angle=initial_pitch_angle,
             )
 
         # ========================================
@@ -52,6 +54,7 @@ class GuidanceController:
         if time < 5.0:
             return GuidanceResult(
                 pitch_angle=initial_pitch_angle,
+                target_pitch_angle=initial_pitch_angle,
             )
 
         # ========================================
@@ -78,6 +81,7 @@ class GuidanceController:
 
             return GuidanceResult(
                 pitch_angle=pitch_angle,
+                target_pitch_angle=pitch_angle,
             )
 
         # ========================================
@@ -88,6 +92,7 @@ class GuidanceController:
             # 燃焼終了後は誘導による姿勢変更を行わない
             return GuidanceResult(
                 pitch_angle=previous_pitch_angle,
+                target_pitch_angle=previous_pitch_angle,
             )
 
         # ========================================
@@ -104,18 +109,12 @@ class GuidanceController:
             ),
         )
 
-        # 一気に飛行角へ合わせず、
-        # 少しずつ追従させる。
-        response_rate = 0.02
+        max_pitch_rate = 3.0
 
-        pitch_angle = (
-            previous_pitch_angle
-            + (
-                target_pitch_angle
-                - previous_pitch_angle
-            )
-            * response_rate
-        )
+        max_pitch_change = (max_pitch_rate * time_step)
+        pitch_error = (target_pitch_angle - previous_pitch_angle)
+        pitch_change = max(-max_pitch_change, min(max_pitch_change, pitch_error))
+        pitch_angle = (previous_pitch_angle + pitch_change)
 
         # 数値誤差などで範囲外へ出ないようにする
         pitch_angle = max(
@@ -128,4 +127,5 @@ class GuidanceController:
 
         return GuidanceResult(
             pitch_angle=pitch_angle,
+            target_pitch_angle=target_pitch_angle,
         )

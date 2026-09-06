@@ -56,6 +56,8 @@ with overview_left:
         - 動圧とMax Q
         - 音速とMach数
         - 発射から着地までの飛行イベント
+        - Pitch Program・Gravity Turn
+        - 簡易姿勢制御（Pitch Rate制限）
         """
     )
 
@@ -74,10 +76,16 @@ with overview_right:
         Propulsion & Vehicle Performance ✅
 
         Phase 4：
-        Wind & Environment ✅ 
-        
-        現在はPhase 5:
-        Multi-stage Rocket　を開発中です。
+        Wind & Environment ✅
+
+        Phase 5：
+        Multi-stage Rocket ✅
+
+        Phase 6：
+        Guidance & Flight Control ✅
+
+        現在はPhase 7：
+        Comparative Analysis 🚧
         """
     )
 
@@ -131,6 +139,7 @@ with column_4:
         - Webダッシュボード
         - Canvas飛行リプレイ
         - 解析グラフ
+        - 飛行角度・目標姿勢角・姿勢角グラフ
         - イベントログ
         - CSV出力
         """

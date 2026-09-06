@@ -4,19 +4,19 @@ import streamlit as st
 st.title("🗺️ Development Roadmap")
 
 st.caption(
-    "基本飛行・解析・推進性能・風モデル・多段ロケットまで実装済みです。"
+    "Phase 6「Guidance & Flight Control」まで実装済み。現在はPhase 7「Comparative Analysis」に着手しています。"
 )
 
 st.header("Development Status")
 
 st.progress(
-    70,
-    text="全体構想に対する現在の進捗イメージ：70%",
+    75,
+    text="全体構想に対する現在の進捗イメージ：75%",
 )
 
 st.info(
-    "Phase 5「Multi-stage Rocket」まで完了。"
-    "次はPhase 6「Guidance & Flight Control」を開発予定です。"
+    "Phase 6「Guidance & Flight Control」まで完了。"
+    "現在はPhase 7「Comparative Analysis」に着手しています。"
 )
 
 
@@ -83,21 +83,24 @@ with st.expander("✅ Phase 5 — Multi-stage Rocket", expanded=True):
     )
 
 
-with st.expander("🚧 Phase 6 — Guidance & Flight Control"):
+with st.expander("✅ Phase 6 — Guidance & Flight Control", expanded=True):
     st.markdown(
         """
         - ✅ 時間による姿勢変更
         - ✅ ピッチプログラム
-        - ⬜ 重力ターン
-        - ⬜ 推力方向の動的変更
-        - ⬜ 簡易姿勢制御
+        - ✅ 重力ターン
+        - ✅ 推力方向の動的変更
+        - ✅ Pitch Rate制限による簡易姿勢制御
+        - ✅ 目標姿勢角・姿勢角の可視化
         """
     )
 
 
-with st.expander("⬜ Phase 7 — Comparative Analysis"):
+with st.expander("🚧 Phase 7 — Comparative Analysis", expanded=True):
     st.markdown(
         """
+        **開発開始**
+
         - ⬜ 複数条件の同時実行
         - ⬜ 軌跡比較
         - ⬜ 性能比較

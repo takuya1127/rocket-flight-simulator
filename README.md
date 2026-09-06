@@ -5,15 +5,16 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 推力・推進剤消費・機体質量・重力・大気・空気抵抗・風を考慮しながら、
 時間ステップごとにロケットの状態を計算します。
 
-現在は、単段ロケットに加えて、**多段ロケット・ブースター・フェアリング分離**まで実装しています。
+現在は、単段ロケットに加えて、**多段ロケット・ブースター・フェアリング分離**と、
+**Guidance & Flight Control（姿勢誘導・重力ターン・簡易姿勢制御）**まで実装しています。
 
 計算結果はStreamlitダッシュボード上で、
 飛行軌跡・解析グラフ・飛行イベント・Flight Replayとして確認できます。
 
 > 🚧 **現在開発中のプロジェクトです。**
 >
-> Phase 5「Multi-stage Rocket」まで実装済みです。
-> 次はPhase 6「Guidance & Flight Control」を開発予定です。
+> Phase 6「Guidance & Flight Control」まで実装済みです。
+> 現在はPhase 7「Comparative Analysis」に着手しています。
 
 ---
 
@@ -43,6 +44,10 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 - 推力・重力・空気抵抗による運動計算
 - 推進剤消費と機体質量変化
 - 発射角度による推力方向計算
+- 時間ベースの姿勢変更
+- Pitch Program
+- Gravity Turn
+- Pitch Rate制限による簡易姿勢制御
 - Liftoff / Apogee / Landing判定
 
 ### 🔥 Propulsion
@@ -84,6 +89,7 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 - 水平到達距離
 - 推力・推進剤流量・Isp・T/W
 - 機体質量・燃料残量の推移
+- 飛行角度・目標姿勢角・姿勢角の時系列解析
 
 ### 🖥️ Dashboard
 
@@ -134,6 +140,7 @@ Rocket Flight Simulator
 │   ├── atmosphere.py
 │   ├── engine.py
 │   ├── gravity.py
+│   ├── guidance.py
 │   ├── physics_calculator.py
 │   ├── rocket_simulation.py
 │   └── stage_manager.py
@@ -220,8 +227,6 @@ T/W = F / (m × g)
 - 地球の自転
 - 地球曲率を考慮した座標系
 - 揚力
-- 詳細な姿勢制御
-- ピッチプログラム・重力ターン
 - 高度・大気圧による詳細なエンジン性能変化
 - 分離物体の独立飛行
 - 軌道力学
@@ -274,15 +279,16 @@ T/W = F / (m × g)
 - Booster Separation
 - Fairing Separation
 
-### 🚧 Phase 6 — Guidance & Flight Control
+### ✅ Phase 6 — Guidance & Flight Control
 
 - Time-based Attitude Change
 - Pitch Program
 - Gravity Turn
 - Dynamic Thrust Direction
 - Basic Attitude Control
+- Target Pitch / Actual Pitch Visualization
 
-### ⬜ Phase 7 — Comparative Analysis
+### 🚧 Phase 7 — Comparative Analysis
 
 - Multiple Simulation Comparison
 - Trajectory Comparison
@@ -336,7 +342,7 @@ python -m streamlit run streamlit_app.py
 
 ## 📌 Project Status
 
-**Phase 5 Completed ✅**
+**Phase 6 Completed ✅ / Phase 7 Started 🚧**
 
 現在は、
 
@@ -350,9 +356,11 @@ Propulsion & Vehicle Performance
 Wind & Environment
         ↓
 Multi-stage Rocket
+        ↓
+Guidance & Flight Control
 ```
 
 まで実装しています。
 
-次のPhase 6では、飛行中の姿勢や推力方向を変化させる
-**Guidance & Flight Control**へ拡張します。
+現在は、複数条件による飛行結果を比較・解析できる
+**Phase 7「Comparative Analysis」** の開発を進めています。

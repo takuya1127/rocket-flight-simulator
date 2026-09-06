@@ -258,12 +258,13 @@ def simulate_rocket(
                 previous_pitch_angle=applied_pitch_angle,
                 has_launched=has_launched,
                 engine_is_burning=engine_is_burning,
+                time_step=TIME_STEP,
             )
         )
 
-        next_pitch_angle = (
-            guidance_result.pitch_angle
-        )
+        next_pitch_angle = ( guidance_result.pitch_angle )
+
+        target_pitch_angle = ( guidance_result.target_pitch_angle )
 
         # ========================================
         # 風
@@ -835,6 +836,7 @@ def simulate_rocket(
             acceleration_y=acceleration_y,
             flight_angle=flight_angle,
             pitch_angle=applied_pitch_angle,
+            target_pitch_angle=target_pitch_angle,
             dynamic_pressure=dynamic_pressure,
             mach_number=current_mach,
             gravity=current_gravity,

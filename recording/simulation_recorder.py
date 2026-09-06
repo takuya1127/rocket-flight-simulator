@@ -44,6 +44,7 @@ class SimulationRecorder:
 
     flight_angles: list[float] = field(default_factory=list)
     pitch_angles: list[float] = field(default_factory=list)
+    target_pitch_angles: list[float] = field(default_factory=list)
 
     dynamic_pressures: list[float] = field(default_factory=list)
     mach_numbers: list[float] = field(default_factory=list)
@@ -79,6 +80,7 @@ class SimulationRecorder:
         acceleration_y: float,
         flight_angle: float,
         pitch_angle: float,
+        target_pitch_angle: float,
         dynamic_pressure: float,
         mach_number: float,
         gravity: float,
@@ -108,6 +110,7 @@ class SimulationRecorder:
 
         self.flight_angles.append(flight_angle)
         self.pitch_angles.append(pitch_angle)
+        self.target_pitch_angles.append(target_pitch_angle)
 
         self.dynamic_pressures.append(dynamic_pressure)
         self.mach_numbers.append(mach_number)
@@ -140,6 +143,7 @@ class SimulationRecorder:
             "accelerations_y": self.accelerations_y,
             "flight_angles": self.flight_angles,
             "pitch_angles": self.pitch_angles,
+            "target_pitch_angles": self.target_pitch_angles,
             "dynamic_pressures": self.dynamic_pressures,
             "mach_numbers": self.mach_numbers,
             "gravities": self.gravities,

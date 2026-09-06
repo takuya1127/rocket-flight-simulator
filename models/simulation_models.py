@@ -199,6 +199,7 @@ class SimulationResult:
 
     flight_angles: list[float]
     pitch_angles: list[float]
+    target_pitch_angles: list[float]
 
     mach_numbers: list[float]
     dynamic_pressures: list[float]

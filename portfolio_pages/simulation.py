@@ -85,6 +85,7 @@ def create_flight_dataframe(
             "Y方向加速度（m/s²）": result.accelerations_y,
             "合成加速度（m/s²）": total_accelerations,
             "飛行角度（度）": result.flight_angles,
+            "目標姿勢角度（度）": result.target_pitch_angles,
             "姿勢角度（度）": result.pitch_angles,
             "動圧（kPa）": [
                 pressure / 1000
@@ -719,13 +720,14 @@ with tab_motion:
         height=320,
     )
 
-    st.subheader("飛行角度・姿勢角度")
+    st.subheader("飛行角度・姿勢制御")
     st.line_chart(
         flight_dataframe.set_index(
             "時刻（秒）"
         )[
             [
                 "飛行角度（度）",
+                "目標姿勢角度（度）",
                 "姿勢角度（度）",
             ]
         ],
