@@ -17,6 +17,7 @@ from core.engine import EngineCalculator
 from core.wind import WindCalculator
 from core.stage_manager import StageManager
 from core.guidance import GuidanceController
+from core.separation_manager import SeparationManager
 
 from models.simulation_models import RocketConfig, SimulationResult
 from recording.simulation_recorder import SimulationRecorder
@@ -97,6 +98,8 @@ def simulate_rocket(
         current_fuel = fuel_mass
 
     angle_radians = math.radians(launch_angle)
+    surface_gravity = GravityCalculator.SURFACE_GRAVITY
+    wind_direction_radians = math.radians(config.wind_direction_deg)
 
     # ========================================
     # ブースター初期状態
@@ -150,8 +153,7 @@ def simulate_rocket(
         + fuel_mass
         + booster_fuel_mass
     )
-    initial_gravity = GravityCalculator.calculate(altitude_meters=0.0,)
-    initial_weight_force = initial_total_mass * initial_gravity
+    initial_weight_force = initial_total_mass * surface_gravity
     thrust_to_weight_ratio = initial_total_thrust / initial_weight_force
     initial_thrust_y = initial_total_thrust * math.sin(angle_radians)
     vertical_thrust_to_weight_ratio = (
@@ -270,9 +272,6 @@ def simulate_rocket(
         # 風
         # ========================================
 
-        wind_direction_radians = math.radians(
-            config.wind_direction_deg
-        )
         wind_result = (
             WindCalculator.calculate_altitude_wind(
                 time=time,
@@ -328,12 +327,8 @@ def simulate_rocket(
                 dry_mass + total_remaining_fuel
         )
 
-        current_gravity_for_launch = (
-            GravityCalculator.calculate(altitude_meters=0.0)
-        )
-
         current_weight_force = (
-                current_total_mass * current_gravity_for_launch
+            current_total_mass * surface_gravity
         )
 
         if current_weight_force > 0:
@@ -370,231 +365,57 @@ def simulate_rocket(
         # 燃焼終了・ステージ切り替え
         # ========================================
 
-        if (
-                not engine_is_burning
-                and has_launched
-        ):
-
-            # ========================================
-            # 多段ロケット
-            # ========================================
-
-            if stage_manager is not None:
-
-                current_stage_index = (
-                    stage_manager.current_stage_index
+        should_handle_burnout = (
+            not engine_is_burning
+            and has_launched
+            and (
+                (
+                    stage_manager is not None
+                    and stage_manager.current_stage_index
+                    != last_burnout_stage_index
                 )
-
-                # 同じステージのBurnoutを
-                # 何度も処理しない
-                if (
-                        current_stage_index
-                        != last_burnout_stage_index
-                ):
-
-                    burned_stage = (
-                        stage_manager.current_stage
-                    )
-
-                    burnout_speed = math.hypot(
-                        velocity_x,
-                        velocity_y,
-                    )
-
-                    # 現在段をBurnout状態へ変更
-                    stage_manager.burnout_current_stage()
-
-                    last_burnout_stage_index = (
-                        current_stage_index
-                    )
-
-                    print()
-                    print(
-                        f"--- {burned_stage.name} 燃焼終了:"
-                        f"{time:.1f}秒 / "
-                        f"高度{position_y:.1f}m / "
-                        f"速度{burnout_speed:.1f}m/s ---"
-                    )
-                    print()
-
-                    event_manager.add_event(
-                        FlightEvent(
-                            event_type=(
-                                FlightEventType.BURNOUT
-                            ),
-                            time=time,
-                            altitude=max(
-                                0.0,
-                                position_y,
-                            ),
-                            description=(
-                                f"{burned_stage.name} "
-                                "エンジン燃焼終了。"
-                                f"速度は"
-                                f"{burnout_speed:.1f}m/s。"
-                            ),
-                        )
-                    )
-
-                    # ========================================
-                    # 次のステージが存在する場合
-                    # ========================================
-
-                    if stage_manager.has_next_stage:
-                        separated_stage_name = (
-                            burned_stage.name
-                        )
-
-                        # Stage分離
-                        stage_manager.separate_stage()
-
-                        event_manager.add_event(
-                            FlightEvent(
-                                event_type=FlightEventType.STAGE_SEPARATION,
-                                time=time,
-                                altitude=max(
-                                    0.0,
-                                    position_y,
-                                ),
-                                description=(
-                                    f"{separated_stage_name} "
-                                    "を分離しました。"
-                                ),
-                            )
-                        )
-
-                        # 次のStage取得
-                        current_stage = (
-                            stage_manager.current_stage
-                        )
-
-                        # ========================================
-                        # 分離後の質量
-                        # ========================================
-
-                        dry_mass = (
-                                stage_manager.remaining_dry_mass
-                                + config.payload_mass
-                                + current_fairing_mass
-                        )
-
-                        if (
-                                booster_attached
-                                and not booster_separated
-                                and config.booster is not None
-                        ):
-                            dry_mass += (
-                                config.booster.total_dry_mass
-                            )
-
-                        # ========================================
-                        # 次段の燃料
-                        # ========================================
-
-                        current_fuel = stage_fuels[
-                            stage_manager.current_stage_index
-                        ]
-
-                        # ========================================
-                        # 次段のエンジン設定
-                        # ========================================
-
-                        thrust = (
-                            current_stage.thrust
-                        )
-
-                        burn_time = (
-                            current_stage.burn_time
-                        )
-
-                        mass_flow_rate = (
-                            EngineCalculator
-                            .calculate_mass_flow_rate(
-                                fuel_mass=current_fuel,
-                                burn_time=burn_time,
-                            )
-                        )
-
-                        # ========================================
-                        # 次段用の時計をリセット
-                        # ========================================
-
-                        stage_start_time = time
-
-                        # 次段点火
-                        stage_manager.ignite_current_stage()
-
-                        print()
-                        print(
-                            f"--- "
-                            f"{separated_stage_name} "
-                            f"分離 ---"
-                        )
-
-                        print(
-                            f"--- "
-                            f"{current_stage.name} "
-                            f"点火:"
-                            f"{time:.1f}秒 ---"
-                        )
-                        print()
-
-                        event_manager.add_event(
-                            FlightEvent(
-                                event_type=(
-                                    FlightEventType.IGNITION
-                                ),
-                                time=time,
-                                altitude=max(
-                                    0.0,
-                                    position_y,
-                                ),
-                                description=(
-                                    f"{current_stage.name} "
-                                    "エンジンに点火しました。"
-                                ),
-                            )
-                        )
-
-            # ========================================
-            # 従来の1段ロケット
-            # ========================================
-
-            elif not burnout_displayed:
-
-                burnout_speed = math.hypot(
-                    velocity_x,
-                    velocity_y,
+                or (
+                    stage_manager is None
+                    and not burnout_displayed
                 )
+            )
+        )
 
-                print()
-                print(
-                    f"--- 燃焼終了:"
-                    f"{time:.1f}秒 / "
-                    f"高度{position_y:.1f}m / "
-                    f"速度{burnout_speed:.1f}m/s ---"
-                )
-                print()
+        if should_handle_burnout:
+            burnout_transition = SeparationManager.handle_engine_burnout(
+                engine_is_burning=engine_is_burning,
+                has_launched=has_launched,
+                stage_manager=stage_manager,
+                stage_fuels=stage_fuels,
+                config=config,
+                current_fairing_mass=current_fairing_mass,
+                booster_attached=booster_attached,
+                booster_separated=booster_separated,
+                time=time,
+                position_y=position_y,
+                velocity_x=velocity_x,
+                velocity_y=velocity_y,
+                dry_mass=dry_mass,
+                current_fuel=current_fuel,
+                thrust=thrust,
+                burn_time=burn_time,
+                mass_flow_rate=mass_flow_rate,
+                stage_start_time=stage_start_time,
+                last_burnout_stage_index=last_burnout_stage_index,
+                burnout_displayed=burnout_displayed,
+                event_manager=event_manager,
+            )
 
-                event_manager.add_event(
-                    FlightEvent(
-                        event_type=(
-                            FlightEventType.BURNOUT
-                        ),
-                        time=time,
-                        altitude=max(
-                            0.0,
-                            position_y,
-                        ),
-                        description=(
-                            "エンジン燃焼終了。"
-                            f"速度は"
-                            f"{burnout_speed:.1f}m/s。"
-                        ),
-                    )
-                )
-
-                burnout_displayed = True
+            dry_mass = burnout_transition.dry_mass
+            current_fuel = burnout_transition.current_fuel
+            thrust = burnout_transition.thrust
+            burn_time = burnout_transition.burn_time
+            mass_flow_rate = burnout_transition.mass_flow_rate
+            stage_start_time = burnout_transition.stage_start_time
+            last_burnout_stage_index = (
+                burnout_transition.last_burnout_stage_index
+            )
+            burnout_displayed = burnout_transition.burnout_displayed
 
         physics_result = PhysicsCalculator.calculate(
             dry_mass=dry_mass,
@@ -661,55 +482,32 @@ def simulate_rocket(
             acceleration_y = 0.0
 
         # ========================================
-        # ブースター分離
+        # ブースター / フェアリング分離
         # ========================================
+
         if (
-                booster_attached
-                and not booster_separated
-                and config.booster is not None
-                and booster_result is not None
-                and not booster_result.engine_is_burning
+            booster_attached
+            and not booster_separated
+            and config.booster is not None
+            and booster_result is not None
+            and not booster_result.engine_is_burning
         ):
-            booster_separated = True
-            booster_attached = False
-
-            booster_dry_mass = (config.booster.total_dry_mass)
-
-            dry_mass = max(
-                0.0, dry_mass - booster_dry_mass,
+            booster_separation = SeparationManager.handle_booster_separation(
+                config=config,
+                booster_result=booster_result,
+                booster_attached=booster_attached,
+                booster_separated=booster_separated,
+                dry_mass=dry_mass,
+                booster_fuel_mass=booster_fuel_mass,
+                time=time,
+                position_y=position_y,
+                event_manager=event_manager,
             )
+            dry_mass = booster_separation.dry_mass
+            booster_fuel_mass = booster_separation.booster_fuel_mass
+            booster_attached = booster_separation.booster_attached
+            booster_separated = booster_separation.booster_separated
 
-            # ブースターに残った燃料も機体から離れる
-            booster_fuel_mass = 0.0
-
-            print()
-            print(
-                f"--- ブースター分離:"
-                f"{time:.1f}秒 / "
-                f"高度{position_y:.1f}m ---"
-            )
-            print()
-
-            event_manager.add_event(
-                FlightEvent(
-                    event_type=(
-                        FlightEventType.BOOSTER_SEPARATION
-                    ),
-                    time=time,
-                    altitude=max(
-                        0.0,
-                        position_y,
-                    ),
-                    description=(
-                        f"{config.booster.count}本の"
-                        "補助ブースターを分離しました。"
-                    ),
-                )
-            )
-
-        # ========================================
-        # フェアリング分離
-        # ========================================
         if (
             has_launched
             and not fairing_separated
@@ -717,39 +515,19 @@ def simulate_rocket(
             and config.fairing_separation_altitude > 0.0
             and position_y >= config.fairing_separation_altitude
         ):
-            fairing_separated = True
-            current_fairing_mass = 0.0
-            dry_mass = max(
-                0.0,
-                dry_mass - config.fairing_mass,
+            fairing_separation = SeparationManager.handle_fairing_separation(
+                config=config,
+                has_launched=has_launched,
+                fairing_separated=fairing_separated,
+                current_fairing_mass=current_fairing_mass,
+                dry_mass=dry_mass,
+                time=time,
+                position_y=position_y,
+                event_manager=event_manager,
             )
-
-            print()
-            print(
-                f"--- フェアリング分離:"
-                f"{time:.1f}秒 / "
-                f"高度{position_y:.1f}m ---"
-            )
-            print()
-
-            event_manager.add_event(
-                FlightEvent(
-                    event_type=(
-                        FlightEventType.FAIRING_SEPARATION
-                    ),
-                    time=time,
-                    altitude=max(
-                        0.0,
-                        position_y,
-                    ),
-                    description=(
-                        "フェアリングを分離しました。"
-                        f"機体質量が"
-                        f"{config.fairing_mass:.1f}kg"
-                        "減少しました。"
-                    ),
-                )
-            )
+            dry_mass = fairing_separation.dry_mass
+            current_fairing_mass = fairing_separation.current_fairing_mass
+            fairing_separated = fairing_separation.fairing_separated
 
         if position_y > max_altitude:
             max_altitude = position_y
