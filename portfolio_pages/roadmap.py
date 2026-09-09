@@ -4,19 +4,21 @@ import streamlit as st
 st.title("🗺️ Development Roadmap")
 
 st.caption(
-    "Phase 6「Guidance & Flight Control」まで実装済み。現在はPhase 7「Comparative Analysis」に着手しています。"
+    "Phase 7「Comparative Analysis」まで実装済み。"
+    "次はPhase 8「Orbital Flight」です。"
 )
 
 st.header("Development Status")
 
 st.progress(
-    75,
-    text="全体構想に対する現在の進捗イメージ：75%",
+    47,
+    text="全15フェーズ中、Phase 7まで完了：47%",
 )
 
 st.info(
-    "Phase 6「Guidance & Flight Control」まで完了。"
-    "現在はPhase 7「Comparative Analysis」に着手しています。"
+    "Phase 7「Comparative Analysis」まで完了。"
+    "次は地球曲率・軌道速度・軌道投入を扱う"
+    "Phase 8「Orbital Flight」に進みます。"
 )
 
 
@@ -71,7 +73,7 @@ with st.expander("✅ Phase 4 — Wind & Environment"):
     )
 
 
-with st.expander("✅ Phase 5 — Multi-stage Rocket", expanded=True):
+with st.expander("✅ Phase 5 — Multi-stage Rocket"):
     st.markdown(
         """
         - ✅ 多段ロケット
@@ -83,7 +85,7 @@ with st.expander("✅ Phase 5 — Multi-stage Rocket", expanded=True):
     )
 
 
-with st.expander("✅ Phase 6 — Guidance & Flight Control", expanded=True):
+with st.expander("✅ Phase 6 — Guidance & Flight Control"):
     st.markdown(
         """
         - ✅ 時間による姿勢変更
@@ -96,20 +98,21 @@ with st.expander("✅ Phase 6 — Guidance & Flight Control", expanded=True):
     )
 
 
-with st.expander("🚧 Phase 7 — Comparative Analysis", expanded=True):
+with st.expander("✅ Phase 7 — Comparative Analysis", expanded=True):
     st.markdown(
         """
-        **開発開始**
-
-        - ⬜ 複数条件の同時実行
-        - ⬜ 軌跡比較
-        - ⬜ 性能比較
-        - ⬜ パラメータ探索
+        - ✅ 複数条件の連続実行
+        - ✅ パラメータスイープ
+        - ✅ 比較結果テーブル
+        - ✅ ベスト条件の自動ハイライト
+        - ✅ 軌跡比較
+        - ✅ 性能比較
+        - ✅ 比較結果CSV出力
         """
     )
 
 
-with st.expander("⬜ Phase 8 — Orbital Flight"):
+with st.expander("⬜ Phase 8 — Orbital Flight", expanded=True):
     st.markdown(
         """
         - ⬜ 地球曲率
@@ -121,25 +124,31 @@ with st.expander("⬜ Phase 8 — Orbital Flight"):
     )
 
 
-with st.expander("🚧 Phase 9 — Visualization & Presentation"):
+with st.expander("⬜ Phase 9 — High-Fidelity Vehicle Model"):
     st.markdown(
         """
-        **実装済み**
-        - ✅ Flight Replay
-        - ✅ ロケットアニメーション
-        - ✅ 炎・煙
-        - ✅ 高度による背景変化
-
-        **今後**
-        - ⬜ カメラ追従の高度化
-        - ⬜ 発射台・地上設備
-        - ⬜ 分離アニメーション
-        - ⬜ 軌道飛行用の地球表示
+        - ⬜ 高度・大気圧によるエンジン性能変化
+        - ⬜ 詳細な空力係数
+        - ⬜ 揚力・迎角
+        - ⬜ 機体形状・基準断面積の変化
+        - ⬜ より詳細な質量特性
         """
     )
 
 
-with st.expander("⬜ Phase 10 — Validation & Engineering Quality"):
+with st.expander("⬜ Phase 10 — Environmental Disturbances"):
+    st.markdown(
+        """
+        - ⬜ 大気モデルの高精度化
+        - ⬜ 現実的な風速プロファイル
+        - ⬜ 乱気流・突風外乱
+        - ⬜ 地球自転の影響
+        - ⬜ 環境条件の不確実性
+        """
+    )
+
+
+with st.expander("⬜ Phase 11 — Validation & Engineering Quality"):
     st.markdown(
         """
         - ⬜ 単体テスト
@@ -147,5 +156,53 @@ with st.expander("⬜ Phase 10 — Validation & Engineering Quality"):
         - ⬜ 質量・エネルギー収支
         - ⬜ 再現性確認
         - ⬜ 実在ロケットとの比較
+        """
+    )
+
+
+with st.expander("⬜ Phase 12 — Monte Carlo Simulation"):
+    st.markdown(
+        """
+        - ⬜ 大量反復シミュレーション
+        - ⬜ パラメータ不確実性
+        - ⬜ 統計解析
+        - ⬜ 成功確率の推定
+        - ⬜ 結果分布の可視化
+        """
+    )
+
+
+with st.expander("⬜ Phase 13 — Automatic Optimization"):
+    st.markdown(
+        """
+        - ⬜ パラメータ自動探索
+        - ⬜ 誘導パラメータ最適化
+        - ⬜ 機体パラメータ最適化
+        - ⬜ 目的関数・制約条件評価
+        - ⬜ 宇宙・軌道到達性能の改善
+        """
+    )
+
+
+with st.expander("⬜ Phase 14 — Mission & Failure Analysis"):
+    st.markdown(
+        """
+        - ⬜ ミッション成功条件
+        - ⬜ 故障シナリオ
+        - ⬜ 感度解析
+        - ⬜ 信頼性評価
+        - ⬜ ミッション単位の性能解析
+        """
+    )
+
+
+with st.expander("⬜ Phase 15 — Advanced Visualization"):
+    st.markdown(
+        """
+        - ⬜ カメラ追従の高度化
+        - ⬜ 発射台・地上設備
+        - ⬜ 分離アニメーション
+        - ⬜ 軌道飛行の可視化
+        - ⬜ Monte Carlo・最適化結果の可視化
         """
     )

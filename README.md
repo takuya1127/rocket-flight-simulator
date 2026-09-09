@@ -13,8 +13,8 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 
 > 🚧 **現在開発中のプロジェクトです。**
 >
-> Phase 6「Guidance & Flight Control」まで実装済みです。
-> 現在はPhase 7「Comparative Analysis」に着手しています。
+> Phase 7「Comparative Analysis」まで実装済みです。
+> 次はPhase 8「Orbital Flight」の開発に進みます。
 
 ---
 
@@ -91,6 +91,16 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 - 機体質量・燃料残量の推移
 - 飛行角度・目標姿勢角・姿勢角の時系列解析
 
+### 🔍 Comparative Analysis
+
+- 複数条件の連続シミュレーション
+- パラメータスイープ
+- 比較結果テーブル
+- ベスト条件の自動ハイライト
+- 飛行軌跡比較
+- 最高高度・最高速度・最大Mach数・飛行時間の性能比較
+- 比較結果CSV出力
+
 ### 🖥️ Dashboard
 
 - シミュレーション条件入力
@@ -100,6 +110,7 @@ Pythonで開発している、**2次元ロケット飛行シミュレーショ�
 - Flight Events
 - 詳細解析グラフ
 - CSV出力
+- 単体 / 比較シミュレーションの分離表示
 
 ---
 
@@ -288,12 +299,15 @@ T/W = F / (m × g)
 - Basic Attitude Control
 - Target Pitch / Actual Pitch Visualization
 
-### 🚧 Phase 7 — Comparative Analysis
+### ✅ Phase 7 — Comparative Analysis
 
 - Multiple Simulation Comparison
+- Parameter Sweep
+- Comparison Result Table
+- Best-condition Highlight
 - Trajectory Comparison
 - Performance Comparison
-- Parameter Study
+- Comparison CSV Export
 
 ### ⬜ Phase 8 — Orbital Flight
 
@@ -303,29 +317,61 @@ T/W = F / (m × g)
 - Orbital Injection
 - Orbital Mechanics
 
-### 🚧 Phase 9 — Visualization & Presentation
+### ⬜ Phase 9 — High-Fidelity Vehicle Model
 
-**Implemented**
+- Altitude-dependent Engine Performance
+- Detailed Aerodynamic Coefficients
+- Lift / Angle of Attack
+- Vehicle Geometry / Reference Area Changes
+- More Detailed Mass Properties
 
-- Flight Replay
-- Rocket Animation
-- Flame / Smoke
-- Altitude-dependent Background
+### ⬜ Phase 10 — Environmental Disturbances
 
-**Planned**
+- Improved Atmospheric Model
+- Realistic Wind Profile
+- Turbulence / Gust Disturbances
+- Earth Rotation Effects
+- Environmental Uncertainty
 
-- Improved Camera Tracking
-- Launch Pad / Ground Equipment
-- Separation Animation
-- Orbital Visualization
-
-### ⬜ Phase 10 — Validation & Engineering Quality
+### ⬜ Phase 11 — Validation & Engineering Quality
 
 - Unit Tests
 - Physics Validation
 - Mass / Energy Checks
 - Reproducibility Checks
 - Comparison with Real Rockets
+
+### ⬜ Phase 12 — Monte Carlo Simulation
+
+- Large-scale Repeated Simulation
+- Parameter Uncertainty
+- Statistical Result Analysis
+- Success Probability Estimation
+- Result Distribution Visualization
+
+### ⬜ Phase 13 — Automatic Optimization
+
+- Automatic Parameter Search
+- Guidance Parameter Optimization
+- Vehicle Parameter Optimization
+- Objective / Constraint Evaluation
+- Space / Orbit Reachability Improvement
+
+### ⬜ Phase 14 — Mission & Failure Analysis
+
+- Mission Success Criteria
+- Failure Scenario Modeling
+- Sensitivity Analysis
+- Reliability Evaluation
+- Mission-level Performance Analysis
+
+### ⬜ Phase 15 — Advanced Visualization
+
+- Improved Camera Tracking
+- Launch Pad / Ground Equipment
+- Separation Animation
+- Orbital Visualization
+- Monte Carlo / Optimization Visualization
 
 ---
 
@@ -342,7 +388,7 @@ python -m streamlit run streamlit_app.py
 
 ## 📌 Project Status
 
-**Phase 6 Completed ✅ / Phase 7 Started 🚧**
+**Phase 7 Completed ✅ / Phase 8 Next ⬜**
 
 現在は、
 
@@ -358,9 +404,18 @@ Wind & Environment
 Multi-stage Rocket
         ↓
 Guidance & Flight Control
+        ↓
+Comparative Analysis
 ```
 
 まで実装しています。
 
-現在は、複数条件による飛行結果を比較・解析できる
-**Phase 7「Comparative Analysis」** の開発を進めています。
+Phase 7では、複数条件の連続実行、パラメータスイープ、
+軌跡・性能比較、ベスト条件の自動抽出、比較結果CSV出力まで実装しました。
+
+次は地球曲率・軌道速度・軌道投入を扱う
+**Phase 8「Orbital Flight」** に進みます。
+
+最終的には、高精度な機体・環境モデルと検証を経て、
+Monte Carlo解析・自動最適化・ミッション／故障解析まで発展させ、
+多数のシミュレーションから宇宙・軌道到達条件を探索できるシステムを目指します。

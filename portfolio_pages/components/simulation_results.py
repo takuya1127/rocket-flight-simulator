@@ -33,7 +33,7 @@ def render_simulation_results(
     )
 
     summary_columns[2].metric(
-        label="最大Mach",
+        label="最大マッハ数",
         value=f"Mach {result.max_mach_number:.2f}",
     )
 
@@ -81,7 +81,6 @@ def render_simulation_results(
         value=f"{display_burn_time:.1f} 秒",
     )
 
-
     # ========================================
     # 飛行軌跡とイベント
     # ========================================
@@ -97,6 +96,7 @@ def render_simulation_results(
         # PC / スマホとも同じCanvasエンジンを使用する。
         # Plotlyの大量フレームをブラウザへ送らないため、
         # MessageSizeErrorと再生負荷を大幅に抑えられる。
+
         replay_html = create_flight_replay_html(
             result,
             mobile_mode=mobile_mode,
@@ -129,28 +129,30 @@ def render_simulation_results(
 
                 st.divider()
 
-
     # ========================================
     # 解析グラフ
     # ========================================
 
     st.header("詳細解析")
-    analysis_view = st.radio(
-        "表示する解析カテゴリ",
-        ["運動解析", "空力・環境", "機体状態", "推進性能"],
-        horizontal=True,
-        label_visibility="collapsed",
+    tab_motion, tab_aero, tab_vehicle, tab_propulsion = st.tabs(
+        [
+            "運動解析",
+            "空力・環境",
+            "機体状態",
+            "推進性能",
+        ]
     )
-
 
     # ========================================
     # 運動解析
     # ========================================
 
-    if analysis_view == "運動解析":
+    with tab_motion:
         st.subheader("高度")
         st.line_chart(
-            chart_dataframe[
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
                 [
                     "高度（m）",
                 ]
@@ -160,7 +162,9 @@ def render_simulation_results(
 
         st.subheader("速度")
         st.line_chart(
-            chart_dataframe[
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
                 [
                     "X方向速度（m/s）",
                     "Y方向速度（m/s）",
@@ -172,7 +176,9 @@ def render_simulation_results(
 
         st.subheader("加速度")
         st.line_chart(
-            chart_dataframe[
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
                 [
                     "X方向加速度（m/s²）",
                     "Y方向加速度（m/s²）",
@@ -184,7 +190,9 @@ def render_simulation_results(
 
         st.subheader("飛行角度・姿勢制御")
         st.line_chart(
-            chart_dataframe[
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
                 [
                     "飛行角度（度）",
                     "目標姿勢角度（度）",
@@ -193,51 +201,51 @@ def render_simulation_results(
             ],
         )
 
-
     # ========================================
     # 空力・環境解析
     # ========================================
 
-    if analysis_view == "空力・環境":
+    with tab_aero:
         st.subheader("動圧")
         st.line_chart(
-            chart_dataframe[
-                [
-                    "動圧（kPa）",
-                ]
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
+                "動圧（kPa）"
             ],
             height=320,
         )
 
         st.subheader("マッハ数")
         st.line_chart(
-            chart_dataframe[
-                [
-                    "マッハ数",
-                ]
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
+                "マッハ数"
             ],
             height=320,
         )
 
         st.subheader("重力加速度")
         st.line_chart(
-            chart_dataframe[
-                [
-                    "重力加速度（m/s²）",
-                ]
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
+                "重力加速度（m/s²）"
             ],
             height=320,
         )
-
 
     # ========================================
     # 機体状態
     # ========================================
 
-    if analysis_view == "機体状態":
+    with tab_vehicle:
         st.subheader("燃料残量・総質量")
         st.line_chart(
-            chart_dataframe[
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
                 [
                     "総質量（kg）",
                     "燃料残量（kg）",
@@ -250,7 +258,7 @@ def render_simulation_results(
     # 推進性能
     # ========================================
 
-    if analysis_view == "推進性能":
+    with tab_propulsion:
 
         # ========================================
         # エンジン性能サマリー
@@ -282,21 +290,21 @@ def render_simulation_results(
         total_impulse = 0.0
 
         for index in range(
-            len(result.times) - 1
+                len(result.times) - 1
         ):
             time_interval = (
-                result.times[index + 1]
-                - result.times[index]
+                    result.times[index + 1]
+                    - result.times[index]
             )
 
             average_thrust = (
-                result.thrusts[index]
-                + result.thrusts[index + 1]
-            ) / 2
+                                     result.thrusts[index]
+                                     + result.thrusts[index + 1]
+                             ) / 2
 
             total_impulse += (
-                average_thrust
-                * time_interval
+                    average_thrust
+                    * time_interval
             )
 
         # Launchイベントから実際のリフトオフ時刻を取得
@@ -305,7 +313,7 @@ def render_simulation_results(
                 event
                 for event in result.flight_events
                 if event.event_type
-                == FlightEventType.LAUNCH
+                   == FlightEventType.LAUNCH
             ),
             None,
         )
@@ -362,9 +370,11 @@ def render_simulation_results(
 
         st.subheader("推力")
         st.line_chart(
-            chart_dataframe[
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
                 [
-                    "推力（N）",
+                    "推力（N）"
                 ]
             ],
             height=320,
@@ -372,34 +382,33 @@ def render_simulation_results(
 
         st.subheader("推進剤流量")
         st.line_chart(
-            chart_dataframe[
-                [
-                    "推進剤流量（kg/s）",
-                ]
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
+                "推進剤流量（kg/s）"
             ],
             height=320,
         )
 
         st.subheader("比推力")
         st.line_chart(
-            chart_dataframe[
-                [
-                    "比推力（s）",
-                ]
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
+                "比推力（s）"
             ],
             height=320,
         )
 
         st.subheader("推力重量比")
         st.line_chart(
-            chart_dataframe[
-                [
-                    "推力重量比",
-                ]
+            flight_dataframe.set_index(
+                "時刻（秒）"
+            )[
+                "推力重量比"
             ],
             height=320,
         )
-
 
     # ========================================
     # データ一覧・ダウンロード
